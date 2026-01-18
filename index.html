@@ -89,6 +89,7 @@
         input:checked + .slider:before { transform: translateX(20px); }
         input:checked + .slider.green-slider { background-color: #22c55e; }
         input:checked + .slider.blue-slider { background-color: #3b82f6; }
+        input:checked + .slider.purple-slider { background-color: #8b5cf6; }
         input:disabled + .slider { opacity: 0.6; cursor: not-allowed; }
 
         /* Vouchers */
@@ -365,7 +366,9 @@
                         <div class="flex items-center">
                             <label class="shein-label mb-0"><i class="fas fa-truck mr-1 text-green-500"></i> Free Shipping</label>
                             <!-- Smart Notice Banner / Help Button -->
-                            <div id="shipping-notice-badge" class="hidden ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit bg-green-100 text-green-700"></div>
+                            <div id="shipping-notice-badge" class="hidden ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit bg-green-100 text-green-700">
+                                <!-- Injected JS -->
+                            </div>
                             <button id="shipping-manual-help" class="ml-2 text-gray-400 hover:text-black hidden" title="Force Enable Free Shipping">
                                 <i class="fas fa-question-circle text-[12px]"></i>
                             </button>
@@ -400,20 +403,23 @@
                 </div>
             </div>
 
-            <!-- 5. SERVICE FEE (Unified) -->
+            <!-- 5. SERVICE FEE -->
             <div class="shein-input-group">
-                <div class="flex justify-between items-center mb-2">
-                    <label class="shein-label mb-0 text-blue-600"><i class="fas fa-hand-holding-usd mr-1"></i> Service Fee / Pasabuy</label>
-                    <label class="points-switch scale-90">
-                        <input type="checkbox" id="toggle-service">
-                        <span class="slider blue-slider"></span>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <label class="shein-label mb-0 text-purple-600"><i class="fas fa-hand-holding-usd mr-1"></i> Booker Mode</label>
+                        <p class="text-[10px] text-gray-400">For Pasabuy/Service Fees</p>
+                    </div>
+                    <label class="points-switch">
+                        <input type="checkbox" id="toggle-booker">
+                        <span class="slider purple-slider"></span>
                     </label>
                 </div>
                 
-                <div id="service-input-container" class="mt-2 hidden">
+                <div id="booker-input-container" class="mt-2 hidden">
                      <div class="relative">
                         <label class="text-[10px] text-gray-400">Total Fee Amount</label>
-                        <input type="number" id="input-service-fee" class="shein-input text-blue-600" placeholder="50" value="50" inputmode="decimal">
+                        <input type="number" id="input-service-fee" class="shein-input text-purple-600" placeholder="50" inputmode="decimal">
                      </div>
                 </div>
             </div>
@@ -450,8 +456,8 @@
 
                  <!-- Service Fee Row -->
                 <div class="summary-row hidden" id="row-service-fee">
-                    <span class="flex items-center gap-1"><i class="fas fa-hand-holding-usd text-xs text-blue-500"></i> Service Fee</span>
-                    <span class="text-blue-600 font-bold" id="display-service-fee">+₱0.00</span>
+                    <span class="flex items-center gap-1"><i class="fas fa-hand-holding-usd text-xs text-purple-500"></i> Service Fee</span>
+                    <span class="text-purple-600 font-bold" id="display-service-fee">+₱0.00</span>
                 </div>
                 
                 <hr class="border-dashed border-gray-300 my-3">
@@ -588,9 +594,9 @@
         const elShippingHelpIcon = document.getElementById('shipping-help-icon');
         const elShippingTooltip = document.getElementById('shipping-tooltip');
 
-        // Unified Service Fee Elements
-        const elToggleService = document.getElementById('toggle-service');
-        const elServiceContainer = document.getElementById('service-input-container');
+        // Booker Elements
+        const elToggleBooker = document.getElementById('toggle-booker');
+        const elBookerContainer = document.getElementById('booker-input-container');
         const elInputServiceFee = document.getElementById('input-service-fee');
         const elRowServiceFee = document.getElementById('row-service-fee');
         const displayServiceFee = document.getElementById('display-service-fee');
@@ -621,8 +627,9 @@
             bulkItemCount: 1,
             userManuallyToggledShipping: false,
             inputsLocked: false,
-            useServiceFee: false,
-            serviceFee: 50,
+            // Booker
+            bookerMode: false,
+            serviceFee: 0,
             lastCalc: {} 
         };
 
@@ -672,10 +679,10 @@
         });
         elBtnAddBulk.addEventListener('click', addBulkItem);
 
-        // Service Fee Logic
-        elToggleService.addEventListener('change', (e) => {
-            state.useServiceFee = e.target.checked;
-            elServiceContainer.classList.toggle('hidden', !state.useServiceFee);
+        // Booker Mode Logic
+        elToggleBooker.addEventListener('change', (e) => {
+            state.bookerMode = e.target.checked;
+            elBookerContainer.classList.toggle('hidden', !state.bookerMode);
             calculate();
         });
 
@@ -717,10 +724,12 @@
             elSingleInputWrapper.classList.remove('hidden');
             elBulkInputWrapper.classList.add('hidden'); elBulkList.innerHTML = ''; state.bulkItemCount = 0;
 
-            // Service Fee Reset
-            elToggleService.checked = false; 
-            elServiceContainer.classList.add('hidden');
-            elInputServiceFee.value = '50';
+            // Booker Reset
+            state.bookerMode = false;
+            elToggleBooker.checked = false;
+            elBookerContainer.classList.add('hidden');
+            elInputServiceFee.value = '';
+            state.serviceFee = 0;
             
             updateState();
         });
@@ -814,9 +823,8 @@
             state.pointsInput = parseFloat(elPoints.value) || 0;
             state.shippingFee = parseFloat(elInputShipping.value) || 0;
             
-            // Service Fee
+            // Booker
             state.serviceFee = parseFloat(elInputServiceFee.value) || 0;
-            state.useServiceFee = elToggleService.checked;
             
             calculate();
         }
@@ -853,8 +861,6 @@
         function calculate() {
             // 0. Base Price
             let currentBase = state.price;
-            
-            // NUE Removed, Price after NUE is base
             let priceAfterNue = currentBase;
 
             renderVouchers(priceAfterNue);
@@ -949,7 +955,7 @@
 
             // 7. Service Fee
             let totalServiceFee = 0;
-            if (state.useServiceFee && state.serviceFee > 0) {
+            if (state.bookerMode && state.serviceFee > 0) {
                 totalServiceFee = state.serviceFee;
                 elRowServiceFee.classList.remove('hidden');
                 displayServiceFee.innerText = `+${formatMoney(totalServiceFee)}`;
@@ -1025,13 +1031,15 @@
             const c = state.lastCalc;
             let html = `
                 <div class="text-center mb-4 border-b border-dashed border-gray-300 pb-2">
-                    <h2 class="font-bold text-lg">SHEIN ORDER</h2>
+                    <h2 class="font-bold text-lg">SHEIN CHECK</h2>
                     <p class="text-[10px] text-gray-500">${c.date}</p>
                 </div>
             `;
 
             if (state.isBulk && c.items.length > 0) {
-                c.items.forEach(item => html += `<div class="receipt-line"><span>Item #${item.id}</span><span>${formatMoney(item.price)}</span></div>`);
+                c.items.forEach(item => {
+                     html += `<div class="receipt-line"><span>Item #${item.id}</span><span>${formatMoney(item.price)}</span></div>`;
+                });
                 html += `<div class="receipt-divider"></div>`;
             }
 
@@ -1048,22 +1056,40 @@
 
         function copyReceiptToClipboard() {
             const c = state.lastCalc;
-            let text = `SHEIN ORDER ESTIMATE\nDate: ${c.date}\n`;
-            text += `------------------\n`;
-            if (state.isBulk) c.items.forEach(item => text += `Item #${item.id}: ₱${item.price}\n`);
-            text += `------------------\n`;
-            text += `Subtotal: ₱${c.subtotal.toFixed(2)}\n`;
-            if(c.discounts.voucher > 0) text += `Voucher: -₱${c.discounts.voucher.toFixed(2)}\n`;
-            if(c.discounts.points > 0) text += `Points: -₱${c.discounts.points.toFixed(2)}\n`;
-            text += `Shipping: ${c.shipping === 0 ? 'FREE' : '₱'+c.shipping.toFixed(2)}\n`;
-            if(c.serviceFee > 0) text += `Service Fee: ₱${c.serviceFee.toFixed(2)}\n`;
-            text += `------------------\nTOTAL: ₱${c.total.toFixed(2)}`;
+            const d = c.date.split(',')[0];
+            
+            let t = `✨ SHEIN PCHECK ✨\n📅 ${d}\n`;
+            t += `━━━━━━━━━━━━━━━━━━\n`; 
+            
+            if (state.isBulk) {
+                t += `📦 ITEMS (${c.items.length})\n`;
+                c.items.forEach(item => {
+                    t += `▫️ ₱${item.price.toFixed(2)}\n`;
+                });
+                t += `━━━━━━━━━━━━━━━━━━\n`;
+            }
+            
+            if (!state.isBulk) t += `🏷️ Subtotal: ₱${c.subtotal.toFixed(2)}\n`;
+            else t += `🏷️ Subtotal:  ₱${c.subtotal.toFixed(2)}\n`;
+            
+            if(c.discounts.voucher > 0) t += `🎟️ Voucher:  -₱${c.discounts.voucher.toFixed(2)}\n`;
+            if(c.discounts.points > 0) t += `💰 Points:   -₱${c.discounts.points.toFixed(2)}\n`;
+            
+            const ship = c.shipping === 0 ? "FREE ✅" : "₱"+c.shipping.toFixed(2);
+            t += `🚚 Shipping:  ${ship}\n`;
+            
+            if (c.serviceFee > 0) {
+                t += `💸 Service:  +₱${c.serviceFee.toFixed(2)}\n`;
+            }
+            
+            t += `━━━━━━━━━━━━━━━━━━\n`;
+            t += `💜 TOTAL:    ₱${c.total.toFixed(2)}\n`;
+            t += `━━━━━━━━━━━━━━━━━━\n`;
             
             // Legacy copy method for restricted iframes
             const textArea = document.createElement("textarea");
-            textArea.value = text;
+            textArea.value = t;
             
-            // Ensure element is part of document but hidden visually
             textArea.style.position = "fixed";
             textArea.style.left = "-9999px";
             textArea.style.top = "0";
@@ -1074,7 +1100,6 @@
             
             try {
                 document.execCommand('copy');
-                // Success feedback
                 btnCopyReceipt.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
                 setTimeout(() => btnCopyReceipt.innerHTML = '<i class="far fa-copy mr-1"></i> Copy to Clipboard', 2000);
             } catch (err) {
@@ -1088,27 +1113,38 @@
 
         function addToHistory() {
             if (state.lastCalc.total === undefined) return;
-            // Prevent duplicate entries if date is same
             if (historyLog.length > 0 && historyLog[0].date === state.lastCalc.date) return;
-            
+
             historyLog.unshift({...state.lastCalc});
-            if (historyLog.length > 10) historyLog.pop();
+            if (historyLog.length > 5) historyLog.pop();
             
             localStorage.setItem('shein_pcal_history', JSON.stringify(historyLog));
             renderHistory();
         }
 
         function renderHistory() {
-            if (historyLog.length === 0) { historyList.innerHTML = '<p class="text-gray-400 text-center text-xs py-4">No recent calculations</p>'; return; }
+            if (historyLog.length === 0) {
+                historyList.innerHTML = '<p class="text-gray-400 text-center text-xs py-4">No recent calculations</p>';
+                return;
+            }
+            
             historyList.innerHTML = historyLog.map(h => `
                 <div class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
                     <div>
                         <div class="font-bold text-sm">₱${h.total.toFixed(2)}</div>
                         <div class="text-[10px] text-gray-400">${h.items.length} item(s) • ${h.date.split(',')[1]}</div>
                     </div>
-                    <div class="text-right text-[10px] text-gray-500">${h.serviceFee > 0 ? '<span class="text-purple-500">w/ Fee</span>' : ''}</div>
-                </div>`).join('');
+                    <div class="text-right text-[10px] text-gray-500">
+                         ${h.serviceFee > 0 ? '<span class="text-purple-500">w/ Fee</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
         }
+
+        // Initialize
+        document.getElementById('points-rate-display').innerText = `100 Points ≈ ₱${USD_TO_PHP_RATE.toFixed(2)}`;
+        updateState();
+
     </script>
 </body>
 </html>
