@@ -206,6 +206,17 @@
         }
         .receipt-divider { border-top: 1px dashed #e5e7eb; margin: 12px 0; }
 
+        /* Restored Clean Receipt UI */
+        #receipt-content {
+             background-color: #f9fafb;
+             border: 1px solid #e5e7eb;
+             padding: 16px;
+             border-radius: 8px;
+             font-family: 'Inter', sans-serif;
+             white-space: normal;
+             text-align: left;
+        }
+
         /* Status Bar */
         .status-bar {
             font-size: 10px; text-align: center; padding: 4px; font-weight: 600; letter-spacing: 0.5px;
@@ -241,13 +252,6 @@
         }
         .menu-item:hover { background-color: #f9fafb; }
         .menu-item i { width: 24px; text-align: center; margin-right: 12px; }
-
-        /* Receipt Aesthetic */
-        #receipt-content {
-            font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.5;
-            white-space: pre-wrap; color: #1a1a1a; background-color: #fff;
-            border: 1px dashed #e5e7eb; padding: 20px; border-radius: 4px; text-align: center;
-        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen pb-24">
@@ -271,7 +275,7 @@
             </div>
         </div>
         <div class="absolute bottom-4 left-0 w-full text-center text-[10px] text-gray-400 p-4">
-            v2.6.6 • Authorized Use Only
+            v2.9.5 • Authorized Use Only
         </div>
     </div>
 
@@ -591,9 +595,9 @@
                     <button id="close-receipt" class="text-gray-400 hover:text-black"><i class="fas fa-times"></i></button>
                 </div>
                 
-                <!-- Display Area -->
-                <div id="receipt-content" class="bg-gray-50 p-4 rounded border border-gray-200 mb-4 font-mono text-sm shadow-inner whitespace-pre-wrap text-center">
-                   <!-- Content injected here -->
+                <!-- Use a DIV for the visual receipt (Clean HTML Style) -->
+                <div id="receipt-content">
+                    <!-- Dynamic HTML Content -->
                 </div>
                 
                 <button id="btn-copy-receipt" class="w-full bg-black text-white font-bold py-2 rounded text-sm mb-2 mt-4">
@@ -608,7 +612,10 @@
             <div class="modal-card">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-bold text-lg"><i class="fas fa-history mr-2"></i>History</h3>
-                    <button id="close-history" class="text-gray-400 hover:text-black"><i class="fas fa-times"></i></button>
+                    <div class="flex gap-2">
+                        <button id="clear-history" class="text-xs text-red-500 hover:text-red-700 font-bold px-2">CLEAR</button>
+                        <button id="close-history" class="text-gray-400 hover:text-black"><i class="fas fa-times"></i></button>
+                    </div>
                 </div>
                 <div id="history-list" class="max-h-60 overflow-y-auto space-y-2">
                     <p class="text-gray-400 text-center text-xs py-4">No recent calculations</p>
@@ -630,27 +637,40 @@
         const IS_WEEKEND = (TODAY === 0 || TODAY === 6);
         
         const PRESET_VOUCHERS = [
-            // 60% Vouchers (Sorted by Cap Descending)
+            // 60% Vouchers
             { percent: 60, cap: 428, min: 285 },
             { percent: 60, cap: 255, min: 120 },
             { percent: 60, cap: 170, min: 99 },
             { percent: 60, cap: 150, min: 249 },
             { percent: 60, cap: 100, min: 99 },
-            
-            // 50% Vouchers
+            // 50%
             { percent: 50, cap: 250, min: 350 },
             { percent: 50, cap: 200, min: 340 },
-            
-            // 40% Vouchers
+            // 40%
             { percent: 40, cap: 360, min: 499 },
             { percent: 40, cap: 360, min: 600 },
-            
-            // 30% Vouchers
+            // 30%
             { percent: 30, cap: 720, min: 1199 },
             { percent: 30, cap: 700, min: 1200 }
         ];
 
-        // Elements
+        // UI Elements
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const viewCalc = document.getElementById('view-calculator');
+        const viewAcl = document.getElementById('view-acl');
+        const headerTitle = document.querySelector('header h1 span');
+
+        // ACL Elements
+        const aclAuthScreen = document.getElementById('acl-auth');
+        const aclMainScreen = document.getElementById('acl-main');
+        const aclInput = document.getElementById('acl-auth-input');
+        const aclError = document.getElementById('acl-error');
+        const aclLinkInput = document.getElementById('acl-link-input');
+        const aclPreview = document.getElementById('acl-preview');
+        const btnClearLink = document.getElementById('btn-clear-link');
+
+        // Calculator Elements
         const elPrice = document.getElementById('input-price');
         const elBtnLockInputs = document.getElementById('btn-lock-inputs');
         const elVoucherList = document.getElementById('voucher-list');
@@ -685,68 +705,34 @@
         const elBulkTotalDisplay = document.getElementById('bulk-total-display');
         const elShippingHelpIcon = document.getElementById('shipping-help-icon');
         const elShippingTooltip = document.getElementById('shipping-tooltip');
-
-        // Booker Elements
         const elToggleBooker = document.getElementById('toggle-booker');
         const elBookerContainer = document.getElementById('booker-input-container');
         const elInputServiceFee = document.getElementById('input-service-fee');
         const elRowServiceFee = document.getElementById('row-service-fee');
         const displayServiceFee = document.getElementById('display-service-fee');
-
-        // Receipt & History Elements
         const btnGenerateReceipt = document.getElementById('btn-generate-receipt');
         const btnCheckout = document.getElementById('btn-checkout');
         const receiptModal = document.getElementById('receipt-modal');
         const closeReceipt = document.getElementById('close-receipt');
         const btnCopyReceipt = document.getElementById('btn-copy-receipt');
         const receiptContent = document.getElementById('receipt-content');
-        
         const btnHistory = document.getElementById('btn-history');
         const historyModal = document.getElementById('history-modal');
         const closeHistory = document.getElementById('close-history');
+        const clearHistory = document.getElementById('clear-history');
         const historyList = document.getElementById('history-list');
         const elStatusBar = document.getElementById('status-bar');
 
-        // ACL Elements
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const viewCalc = document.getElementById('view-calculator');
-        const viewAcl = document.getElementById('view-acl');
-        const headerTitle = document.querySelector('header h1 span');
-        const aclAuthScreen = document.getElementById('acl-auth');
-        const aclMainScreen = document.getElementById('acl-main');
-        const aclInput = document.getElementById('acl-auth-input');
-        const aclError = document.getElementById('acl-error');
-        const aclLinkInput = document.getElementById('acl-link-input');
-        const aclPreview = document.getElementById('acl-preview');
-        const btnClearLink = document.getElementById('btn-clear-link');
-
         // State
         let state = {
-            price: 0,
-            voucherPercent: 0,
-            voucherCap: Infinity,
-            pointsInput: 0,
-            usePoints: true,
-            selectedVoucherIndex: -1,
-            freeShipping: true,
-            shippingFee: 245,
-            isBulk: false,
-            bulkItemCount: 1,
-            userManuallyToggledShipping: false,
-            inputsLocked: false,
-            // Booker
-            bookerMode: false,
-            serviceFee: 0,
-            lastCalc: {},
-            aclAuthenticated: false
+            price: 0, voucherPercent: 0, voucherCap: Infinity, pointsInput: 0, usePoints: true, selectedVoucherIndex: -1,
+            freeShipping: true, shippingFee: 245, isBulk: false, bulkItemCount: 1, userManuallyToggledShipping: false,
+            inputsLocked: false, bookerMode: false, serviceFee: 0, lastCalc: {},
+            aclAuthenticated: false, bulkItems: [] // Added bulkItems storage
         };
-
-        // History Storage
         let historyLog = [];
 
         // --- Initialization ---
-        // Date detection fix
         if (IS_WEEKEND) {
             elStatusBar.innerText = "WEEKEND MODE: AUTO FREE SHIPPING ACTIVE";
             elStatusBar.className = "status-bar status-weekend";
@@ -754,13 +740,10 @@
             elStatusBar.innerText = `WEEKDAY MODE: FREE SHIPPING ORDERS > ₱${SHIPPING_THRESHOLD}`;
             elStatusBar.className = "status-bar status-weekday";
         }
-
         document.getElementById('points-rate-display').innerText = `100 Pts ≈ ₱${USD_TO_PHP_RATE.toFixed(2)}`;
-        
-        // Ensure variables defined before logic runs
         loadHistory();
-        updateState(); // This calls calculate()
-        
+        updateState();
+
         // --- Navigation ---
         window.toggleMenu = function() {
             sidebar.classList.toggle('open');
@@ -775,6 +758,7 @@
                 headerTitle.innerText = "PCheck";
                 elStatusBar.classList.remove('hidden');
                 elReset.classList.remove('hidden');
+                btnHistory.classList.remove('hidden');
             } else if (view === 'acl') {
                 viewCalc.classList.add('hidden');
                 viewAcl.classList.remove('hidden');
@@ -782,6 +766,7 @@
                 headerTitle.innerText = "ACL Gen";
                 elStatusBar.classList.add('hidden');
                 elReset.classList.add('hidden');
+                btnHistory.classList.add('hidden');
 
                 if(state.aclAuthenticated) {
                     aclAuthScreen.classList.add('hidden');
@@ -836,9 +821,9 @@
             }
         }
         
-        // --- Event Listeners ---
-        const inputs = [elPrice, elPoints, elInputShipping, elInputServiceFee];
-        inputs.forEach(el => el.addEventListener('input', updateState));
+        // --- Event Listeners (Calculator) ---
+        const calcInputs = [elPrice, elPoints, elInputShipping, elInputServiceFee];
+        calcInputs.forEach(el => el.addEventListener('input', updateState));
 
         elBtnLockInputs.addEventListener('click', toggleInputLock);
         elShippingManualHelp.addEventListener('click', () => elShippingManualNotice.classList.toggle('hidden'));
@@ -864,7 +849,6 @@
             calculate();
         });
 
-        // Bulk Logic
         elToggleBulk.addEventListener('change', (e) => {
             state.isBulk = e.target.checked;
             elSingleInputWrapper.classList.toggle('hidden', state.isBulk);
@@ -874,14 +858,12 @@
         });
         elBtnAddBulk.addEventListener('click', addBulkItem);
 
-        // Booker Mode Logic
         elToggleBooker.addEventListener('change', (e) => {
             state.bookerMode = e.target.checked;
             elBookerContainer.classList.toggle('hidden', !state.bookerMode);
             calculate();
         });
 
-        // Receipt Logic
         btnGenerateReceipt.addEventListener('click', () => {
             if (state.lastCalc.total === undefined) return;
             generateReceiptView();
@@ -891,104 +873,63 @@
         closeReceipt.addEventListener('click', () => receiptModal.classList.remove('show'));
         btnCopyReceipt.addEventListener('click', copyReceiptToClipboard);
 
-        // History Logic
         btnHistory.addEventListener('click', () => {
             renderHistory();
             historyModal.classList.add('show');
         });
         closeHistory.addEventListener('click', () => historyModal.classList.remove('show'));
+        
+        clearHistory.addEventListener('click', () => {
+            historyLog = [];
+            localStorage.removeItem('shein_pcal_history');
+            renderHistory();
+        });
 
-        // Checkout Logic
         btnCheckout.addEventListener('click', () => {
             window.open("https://ph.shein.com/", "_blank");
         });
 
         elReset.addEventListener('click', () => {
             if(state.inputsLocked) toggleInputLock();
-
-            // Reset Fields
-            elPrice.value = ''; 
-            elVoucherPercent.value = ''; elVoucherCap.value = ''; elPoints.value = '';
-            
-            // Shipping Reset
+            elPrice.value = ''; elVoucherPercent.value = ''; elVoucherCap.value = ''; elPoints.value = '';
             state.freeShipping = true; elToggleShipping.checked = true;
             state.userManuallyToggledShipping = false;
-            elShippingContainer.classList.add('hidden');
-            elShippingManualNotice.classList.add('hidden');
+            elShippingContainer.classList.add('hidden'); elShippingManualNotice.classList.add('hidden');
             state.shippingFee = 245; elInputShipping.value = '245';
-
             state.selectedVoucherIndex = -1;
-            
-            // Bulk Reset
             state.isBulk = false; elToggleBulk.checked = false;
-            elSingleInputWrapper.classList.remove('hidden');
-            elBulkInputWrapper.classList.add('hidden'); elBulkList.innerHTML = ''; state.bulkItemCount = 0;
-
-            // Booker Reset
-            state.bookerMode = false;
-            elToggleBooker.checked = false;
-            elBookerContainer.classList.add('hidden');
-            elInputServiceFee.value = '';
-            state.serviceFee = 0;
-            
+            elSingleInputWrapper.classList.remove('hidden'); elBulkInputWrapper.classList.add('hidden'); elBulkList.innerHTML = ''; state.bulkItemCount = 0;
+            state.bookerMode = false; elToggleBooker.checked = false;
+            elBookerContainer.classList.add('hidden'); elInputServiceFee.value = ''; state.serviceFee = 0;
             updateState();
         });
 
-        // --- Core Functions ---
-        
+        // --- Logic Functions ---
         function loadHistory() {
             const stored = localStorage.getItem('shein_pcal_history');
-            if (stored) {
-                try {
-                    historyLog = JSON.parse(stored);
-                } catch (e) {
-                    console.error("History parse error", e);
-                    historyLog = [];
-                }
-            }
+            if (stored) { try { historyLog = JSON.parse(stored); } catch (e) { historyLog = []; } }
             renderHistory();
         }
 
         function toggleInputLock() {
             state.inputsLocked = !state.inputsLocked;
             const icon = elBtnLockInputs.querySelector('i');
-            
-            if (state.inputsLocked) {
-                icon.className = 'fas fa-lock text-red-500';
-                elPrice.disabled = true;
-                elBtnAddBulk.disabled = true;
-                document.querySelectorAll('.bulk-price-input').forEach(el => el.disabled = true);
-                document.querySelectorAll('.bulk-delete-btn').forEach(el => {
-                    el.disabled = true;
-                    el.classList.add('opacity-50', 'cursor-not-allowed');
-                });
-            } else {
-                icon.className = 'fas fa-unlock';
-                elPrice.disabled = false;
-                elBtnAddBulk.disabled = false;
-                document.querySelectorAll('.bulk-price-input').forEach(el => el.disabled = false);
-                document.querySelectorAll('.bulk-delete-btn').forEach(el => {
-                    el.disabled = false;
-                    el.classList.remove('opacity-50', 'cursor-not-allowed');
-                });
-            }
+            const locked = state.inputsLocked;
+            icon.className = locked ? 'fas fa-lock text-red-500' : 'fas fa-unlock';
+            elPrice.disabled = locked; elBtnAddBulk.disabled = locked;
+            document.querySelectorAll('.bulk-price-input').forEach(el => el.disabled = locked);
+            document.querySelectorAll('.bulk-delete-btn').forEach(el => { el.disabled = locked; if(locked) el.classList.add('opacity-50'); else el.classList.remove('opacity-50'); });
         }
 
         function addBulkItem(value = null) {
             if (state.inputsLocked) return;
-
             state.bulkItemCount++;
             const div = document.createElement('div');
             div.className = 'bulk-item-row';
             div.innerHTML = `
                 <div class="item-count-badge">${state.bulkItemCount}</div>
-                <div class="relative flex-1">
-                    <span class="absolute left-0 top-3 text-sm font-bold text-gray-400">₱</span>
-                    <input type="number" class="shein-input pl-5 py-2 text-sm bulk-price-input" placeholder="Price" inputmode="decimal" oninput="updateState()" value="${value || ''}">
-                </div>
-                <button class="bulk-delete-btn text-gray-400 hover:text-red-500 p-2" onclick="removeBulkItem(this)">
-                    <i class="fas fa-trash-alt text-sm"></i>
-                </button>
+                <div class="relative flex-1"><span class="absolute left-0 top-3 text-sm font-bold text-gray-400">₱</span><input type="number" class="shein-input pl-5 py-2 text-sm bulk-price-input" placeholder="Price" inputmode="decimal" oninput="updateState()" value="${value || ''}"></div>
+                <button class="bulk-delete-btn text-gray-400 hover:text-red-500 p-2" onclick="removeBulkItem(this)"><i class="fas fa-trash-alt text-sm"></i></button>
             `;
             elBulkList.appendChild(div);
             updateBulkBadges();
@@ -1009,29 +950,27 @@
         function getBulkTotal() {
             const inputs = document.querySelectorAll('.bulk-price-input');
             let sum = 0;
-            inputs.forEach(input => {
-                sum += parseFloat(input.value) || 0;
-            });
+            inputs.forEach(input => sum += parseFloat(input.value) || 0);
             return sum;
         }
 
         function updateState() {
             if (state.isBulk) {
                 state.price = getBulkTotal();
+                state.bulkItems = []; // Refresh bulk items state
+                document.querySelectorAll('.bulk-price-input').forEach(input => {
+                     state.bulkItems.push(parseFloat(input.value) || 0);
+                });
                 elBulkTotalDisplay.innerText = formatMoney(state.price);
             } else {
                 state.price = parseFloat(elPrice.value) || 0;
             }
-
             state.voucherPercent = parseFloat(elVoucherPercent.value) || 0;
             const cap = parseFloat(elVoucherCap.value);
             state.voucherCap = isNaN(cap) ? Infinity : cap;
             state.pointsInput = parseFloat(elPoints.value) || 0;
             state.shippingFee = parseFloat(elInputShipping.value) || 0;
-            
-            // Booker
             state.serviceFee = parseFloat(elInputServiceFee.value) || 0;
-            
             calculate();
         }
 
@@ -1050,36 +989,24 @@
 
         window.selectVoucher = function(index, isEligible) {
             if (!isEligible) return;
-
             if (state.selectedVoucherIndex === index) {
-                state.selectedVoucherIndex = -1;
-                elVoucherPercent.value = '';
-                elVoucherCap.value = '';
+                state.selectedVoucherIndex = -1; elVoucherPercent.value = ''; elVoucherCap.value = '';
             } else {
-                state.selectedVoucherIndex = index;
-                const v = PRESET_VOUCHERS[index];
-                elVoucherPercent.value = v.percent;
-                elVoucherCap.value = v.cap;
+                state.selectedVoucherIndex = index; elVoucherPercent.value = PRESET_VOUCHERS[index].percent; elVoucherCap.value = PRESET_VOUCHERS[index].cap;
             }
             updateState();
         }
 
         function calculate() {
-            // 0. Base Price
             let currentBase = state.price;
             let priceAfterNue = currentBase;
 
             renderVouchers(priceAfterNue);
 
-            // 2. Calculate Voucher
             let voucherDiscount = Math.round(priceAfterNue * (state.voucherPercent / 100));
-            if (state.voucherCap !== Infinity && voucherDiscount > state.voucherCap) {
-                voucherDiscount = state.voucherCap;
-            }
-
+            if (state.voucherCap !== Infinity && voucherDiscount > state.voucherCap) voucherDiscount = state.voucherCap;
             let priceAfterVoucher = Math.max(0, priceAfterNue - voucherDiscount);
 
-            // 3. Max Points
             const maxPointsPhp = Math.round(priceAfterVoucher * MAX_POINTS_PERCENTAGE);
             let pointsValPhp = state.pointsInput * POINTS_TO_USD_RATIO * USD_TO_PHP_RATE;
             let pointsDed = 0;
@@ -1094,51 +1021,32 @@
                 elPointsWarning.classList.remove('font-bold');
             }
 
-            // Calculate Payable Amount BEFORE Shipping (Price - Voucher - Points)
             let payableBeforeShipping = Math.max(0, priceAfterVoucher - pointsDed);
 
-            // --- SMART SHIPPING LOGIC ---
             let systemFreeShipping = false;
             let badgeText = "";
             let showAddMore = false;
             let remaining = 0;
 
             if (IS_WEEKEND) {
-                systemFreeShipping = true;
-                badgeText = "WEEKEND PROMO";
-                showAddMore = false;
+                systemFreeShipping = true; badgeText = "WEEKEND PROMO";
             } else if (payableBeforeShipping >= SHIPPING_THRESHOLD) {
-                systemFreeShipping = true;
-                badgeText = `ORDER > ₱${SHIPPING_THRESHOLD}`;
-                showAddMore = false;
+                systemFreeShipping = true; badgeText = `ORDER > ₱${SHIPPING_THRESHOLD}`;
             } else {
-                systemFreeShipping = false;
                 if (payableBeforeShipping > 0) {
-                    showAddMore = true;
-                    remaining = SHIPPING_THRESHOLD - payableBeforeShipping;
+                    showAddMore = true; remaining = SHIPPING_THRESHOLD - payableBeforeShipping;
                 }
             }
 
             if (systemFreeShipping) {
-                state.freeShipping = true;
-                elToggleShipping.checked = true;
-                elToggleShipping.disabled = true; 
-                elShippingNoticeBadge.innerText = badgeText;
-                elShippingNoticeBadge.classList.remove('hidden');
-                elShippingContainer.classList.add('hidden');
-                elShippingManualHelp.classList.add('hidden');
-                elShippingManualNotice.classList.add('hidden');
+                state.freeShipping = true; elToggleShipping.checked = true; elToggleShipping.disabled = true;
+                elShippingNoticeBadge.innerText = badgeText; elShippingNoticeBadge.classList.remove('hidden');
+                elShippingContainer.classList.add('hidden'); elShippingManualHelp.classList.add('hidden'); elShippingManualNotice.classList.add('hidden');
             } else {
-                elToggleShipping.disabled = false;
-                elShippingNoticeBadge.classList.add('hidden');
-                elShippingManualHelp.classList.remove('hidden');
+                elToggleShipping.disabled = false; elShippingNoticeBadge.classList.add('hidden'); elShippingManualHelp.classList.remove('hidden');
                 if (!state.userManuallyToggledShipping) {
-                    state.freeShipping = false;
-                    elToggleShipping.checked = false;
-                    elShippingContainer.classList.remove('hidden');
-                } else {
-                     elShippingContainer.classList.toggle('hidden', state.freeShipping);
-                }
+                    state.freeShipping = false; elToggleShipping.checked = false; elShippingContainer.classList.remove('hidden');
+                } else { elShippingContainer.classList.toggle('hidden', state.freeShipping); }
             }
 
             if (showAddMore && !state.freeShipping) {
@@ -1146,50 +1054,31 @@
                 elShippingAddMoreText.innerText = `Add ₱${remaining.toFixed(2)} more for Free Shipping`;
                 let percent = Math.min(100, (payableBeforeShipping / SHIPPING_THRESHOLD) * 100);
                 elShippingProgressBar.style.width = `${percent}%`;
-                
                 elShippingHelpIcon.classList.remove('hidden');
                 elShippingTooltip.innerText = `Add ₱${remaining.toFixed(2)} for Free Shipping`;
                 elShippingTooltip.innerHTML += '<div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>';
-
             } else {
-                elShippingAddMoreContainer.classList.add('hidden');
-                elShippingHelpIcon.classList.add('hidden');
+                elShippingAddMoreContainer.classList.add('hidden'); elShippingHelpIcon.classList.add('hidden');
             }
 
-            // 6. Shipping
             let finalShipping = state.freeShipping ? 0 : state.shippingFee;
+            let totalServiceFee = (state.bookerMode && state.serviceFee > 0) ? state.serviceFee : 0;
+            if (totalServiceFee > 0) {
+                elRowServiceFee.classList.remove('hidden'); displayServiceFee.innerText = `+${formatMoney(totalServiceFee)}`;
+            } else { elRowServiceFee.classList.add('hidden'); }
 
-            // 7. Service Fee (Booker Mode)
-            let totalServiceFee = 0;
-            if (state.bookerMode && state.serviceFee > 0) {
-                totalServiceFee = state.serviceFee;
-                elRowServiceFee.classList.remove('hidden');
-                displayServiceFee.innerText = `+${formatMoney(totalServiceFee)}`;
-            } else {
-                elRowServiceFee.classList.add('hidden');
-            }
-
-            // 8. Final Total
             const finalTotal = payableBeforeShipping + finalShipping + totalServiceFee;
-            
             const totalSavings = voucherDiscount + pointsDed;
             const savingsPercent = state.price > 0 ? ((totalSavings / state.price) * 100).toFixed(0) : 0;
 
-            // Render
             displaySubtotal.innerText = formatMoney(state.price);
             displayVoucher.innerText = `-${formatMoney(voucherDiscount)}`;
             displayPoints.innerText = `-${formatMoney(pointsDed)}`;
-            
             if (state.freeShipping) {
-                displayShipping.innerText = "Free";
-                displayShipping.classList.add('text-green-600');
-                displayShipping.classList.remove('text-black');
+                displayShipping.innerText = "Free"; displayShipping.className = "text-green-600 font-bold";
             } else {
-                displayShipping.innerText = `+${formatMoney(finalShipping)}`;
-                displayShipping.classList.remove('text-green-600');
-                displayShipping.classList.add('text-black');
+                displayShipping.innerText = `+${formatMoney(finalShipping)}`; displayShipping.className = "text-black font-bold";
             }
-
             displayTotal.innerText = formatMoney(finalTotal);
 
             const originalPriceForDisplay = state.price + finalShipping;
@@ -1201,31 +1090,23 @@
             }
             
             if (totalSavings > 0) {
-                displaySavings.style.visibility = 'visible';
-                displaySavings.innerText = `You Save: ${formatMoney(totalSavings)} (${savingsPercent}%)`;
-            } else {
-                displaySavings.style.visibility = 'hidden';
-            }
+                displaySavings.style.visibility = 'visible'; displaySavings.innerText = `You Save: ${formatMoney(totalSavings)} (${savingsPercent}%)`;
+            } else { displaySavings.style.visibility = 'hidden'; }
 
-            // Store for Receipt
             state.lastCalc = {
                 items: state.isBulk ? getBulkItemsData() : [{price: state.price}],
                 subtotal: state.price,
-                discounts: {
-                    voucher: voucherDiscount,
-                    points: pointsDed
-                },
-                shipping: finalShipping,
-                serviceFee: totalServiceFee,
-                total: finalTotal,
-                date: new Date().toLocaleString('en-PH')
+                discounts: { voucher: voucherDiscount, points: pointsDed },
+                shipping: finalShipping, serviceFee: totalServiceFee, total: finalTotal,
+                date: new Date().toLocaleString('en-PH'),
+                // Save current state for restoration
+                savedState: JSON.parse(JSON.stringify(state))
             };
         }
 
         function getBulkItemsData() {
-            const inputs = document.querySelectorAll('.bulk-price-input');
             let items = [];
-            inputs.forEach((input, index) => {
+            document.querySelectorAll('.bulk-price-input').forEach((input, index) => {
                 const val = parseFloat(input.value) || 0;
                 if(val > 0) items.push({ id: index+1, price: val });
             });
@@ -1236,98 +1117,178 @@
             return '₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // --- Receipt Generation ---
+        // --- Receipt Functions ---
+        
+        // This generates the AESTHETIC TEXT for Clipboard
         function getReceiptText() {
             const c = state.lastCalc;
             const now = new Date();
             const dateStr = `${now.getMonth()+1}/${now.getDate()}/${now.getFullYear().toString().slice(-2)} • ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            let t = `『 ☁︎ 𝗦𝗛𝗘𝗜𝗡 𝗥𝗘𝗖𝗘𝗜𝗣𝗧 ☁︎ 』\n\n`;
-            t += `  ${dateStr}\n`;
-            t += `  ── ☁︎ ── ☁︎ ── ☁︎ ──\n\n`;
-
+            let t = `『 ☁︎ 𝗦𝗛𝗘𝗜𝗡 𝗥𝗘𝗖𝗘𝗜𝗣𝗧 ☁︎ 』\n\n  ${dateStr}\n  ── ☁︎ ── ☁︎ ── ☁︎ ──\n\n`;
             t += `  [+] SUB    > ${formatMoney(c.subtotal)}\n`;
             if(c.discounts.voucher > 0) t += `  [-] VCH    > ₱${c.discounts.voucher}\n`; 
             if(c.discounts.points > 0)  t += `  [-] PTS    > ₱${c.discounts.points}\n`;
-            
             const shipVal = c.shipping === 0 ? " 0" : formatMoney(c.shipping);
             t += `  [+] SHP    > ${shipVal}\n`;
-
-            if (c.serviceFee > 0) {
-                t += `  [+] FEE    > ${formatMoney(c.serviceFee)}\n`;
-            }
-
-            t += `\n  ══════════════\n`;
-            t += `  ➥  PAY    :  ${formatMoney(c.total)}\n`;
-            t += `  ══════════════`;
-            
+            if (c.serviceFee > 0) t += `  [+] FEE    > ${formatMoney(c.serviceFee)}\n`;
+            t += `\n  ══════════════\n  ➥  PAY    :  ${formatMoney(c.total)}\n  ══════════════`;
             return t;
         }
 
+        // This generates the CLEAN HTML VIEW for the Modal
         function generateReceiptView() {
-            const text = getReceiptText();
-            // Just displaying the raw text is robust and simple
-            receiptContent.textContent = text;
+            const c = state.lastCalc;
+            
+            // Clean HTML Design
+            let html = `
+                <div class="text-center mb-4 border-b border-dashed border-gray-300 pb-2">
+                    <h2 class="font-bold text-lg text-gray-800">SHEIN CHECK</h2>
+                    <p class="text-xs text-gray-500">${c.date}</p>
+                </div>
+            `;
+
+            if (state.isBulk && c.items.length > 0) {
+                 c.items.forEach(item => {
+                     html += `
+                     <div class="receipt-line">
+                        <span>Item #${item.id}</span>
+                        <span>${formatMoney(item.price)}</span>
+                     </div>`;
+                 });
+                 html += `<div class="receipt-divider"></div>`;
+            }
+
+            html += `
+            <div class="receipt-line">
+                <span>Subtotal</span>
+                <span>${formatMoney(c.subtotal)}</span>
+            </div>`;
+            
+            if (c.discounts.voucher > 0) {
+                html += `
+                <div class="receipt-line text-red-600">
+                    <span>Voucher</span>
+                    <span>-${formatMoney(c.discounts.voucher)}</span>
+                </div>`;
+            }
+            
+            if (c.discounts.points > 0) {
+                html += `
+                <div class="receipt-line text-yellow-600">
+                    <span>Points</span>
+                    <span>-${formatMoney(c.discounts.points)}</span>
+                </div>`;
+            }
+
+            const shippingText = c.shipping === 0 ? "FREE" : formatMoney(c.shipping);
+            const shippingClass = c.shipping === 0 ? "text-green-600 font-bold" : "";
+            
+            html += `
+            <div class="receipt-line">
+                <span>Shipping</span>
+                <span class="${shippingClass}">${shippingText}</span>
+            </div>`;
+
+            if (c.serviceFee > 0) {
+                html += `
+                <div class="receipt-line text-purple-600">
+                    <span>Service Fee</span>
+                    <span>+${formatMoney(c.serviceFee)}</span>
+                </div>`;
+            }
+
+            html += `<div class="receipt-divider"></div>`;
+            
+            html += `
+            <div class="flex justify-between items-center mt-2">
+                <span class="font-bold text-lg">TOTAL</span>
+                <span class="font-black text-xl">${formatMoney(c.total)}</span>
+            </div>`;
+            
+            receiptContent.innerHTML = html;
         }
 
         function copyReceiptToClipboard() {
             const text = getReceiptText();
-            
-            // Legacy copy method for restricted iframes
             const textArea = document.createElement("textarea");
             textArea.value = text;
-            
-            textArea.style.position = "fixed";
-            textArea.style.left = "-9999px";
-            textArea.style.top = "0";
+            textArea.style.position = "fixed"; textArea.style.left = "-9999px"; textArea.style.top = "0";
             document.body.appendChild(textArea);
-            
-            textArea.focus();
-            textArea.select();
-            
+            textArea.focus(); textArea.select();
             try {
                 document.execCommand('copy');
                 btnCopyReceipt.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
                 setTimeout(() => btnCopyReceipt.innerHTML = '<i class="far fa-copy mr-1"></i> Copy to Clipboard', 2000);
             } catch (err) {
-                console.error('Unable to copy', err);
                 btnCopyReceipt.innerHTML = '<i class="fas fa-times mr-1"></i> Error';
                 setTimeout(() => btnCopyReceipt.innerHTML = '<i class="far fa-copy mr-1"></i> Copy to Clipboard', 2000);
             }
-            
             document.body.removeChild(textArea);
         }
 
         function addToHistory() {
             if (state.lastCalc.total === undefined) return;
-            // Avoid Duplicates (simple check)
             if (historyLog.length > 0 && historyLog[0].date === state.lastCalc.date) return;
-
             historyLog.unshift({...state.lastCalc});
-            if (historyLog.length > 5) historyLog.pop();
-            
+            if (historyLog.length > 10) historyLog.pop();
             localStorage.setItem('shein_pcal_history', JSON.stringify(historyLog));
             renderHistory();
         }
 
         function renderHistory() {
-            if (historyLog.length === 0) {
-                historyList.innerHTML = '<p class="text-gray-400 text-center text-xs py-4">No recent calculations</p>';
-                return;
-            }
-            
-            historyList.innerHTML = historyLog.map(h => `
-                <div class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center">
+            if (historyLog.length === 0) { historyList.innerHTML = '<p class="text-gray-400 text-center text-xs py-4">No recent calculations</p>'; return; }
+            historyList.innerHTML = historyLog.map((h, i) => `
+                <div onclick="restoreHistory(${i})" class="bg-gray-50 p-3 rounded border border-gray-100 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors">
                     <div>
                         <div class="font-bold text-sm">₱${h.total.toFixed(2)}</div>
                         <div class="text-[10px] text-gray-400">${h.items.length} item(s) • ${h.date.split(',')[1]}</div>
                     </div>
-                    <div class="text-right text-[10px] text-gray-500">
-                         ${h.serviceFee > 0 ? '<span class="text-purple-500">w/ Fee</span>' : ''}
-                    </div>
-                </div>
-            `).join('');
+                    <div class="text-right text-[10px] text-gray-500">${h.serviceFee > 0 ? '<span class="text-purple-500">w/ Fee</span>' : ''}</div>
+                </div>`).join('');
         }
+
+        window.restoreHistory = function(index) {
+            const h = historyLog[index];
+            const saved = h.savedState;
+            if (!saved) return;
+            
+            // Restore Values
+            elPrice.value = saved.price || '';
+            elVoucherPercent.value = saved.voucherPercent || '';
+            elVoucherCap.value = saved.voucherCap === Infinity ? '' : saved.voucherCap;
+            elPoints.value = saved.pointsInput || '';
+            elInputShipping.value = saved.shippingFee;
+            elInputServiceFee.value = saved.serviceFee || '';
+            
+            // Restore Toggles
+            elToggleShipping.checked = saved.freeShipping;
+            elShippingContainer.classList.toggle('hidden', saved.freeShipping);
+            
+            elToggleBooker.checked = saved.bookerMode;
+            elBookerContainer.classList.toggle('hidden', !saved.bookerMode);
+            
+            // Restore Bulk
+            elToggleBulk.checked = saved.isBulk;
+            elSingleInputWrapper.classList.toggle('hidden', saved.isBulk);
+            elBulkInputWrapper.classList.toggle('hidden', !saved.isBulk);
+            
+            // Restore Bulk Items
+            elBulkList.innerHTML = '';
+            state.bulkItemCount = 0;
+            if (saved.isBulk && saved.bulkItems && saved.bulkItems.length > 0) {
+                 saved.bulkItems.forEach(val => addBulkItem(val));
+            } else if (saved.isBulk) {
+                 addBulkItem(); // Default 1
+            }
+
+            historyModal.classList.remove('show');
+            updateState();
+        }
+
+        // Initialize
+        document.getElementById('points-rate-display').innerText = `100 Points ≈ ₱${USD_TO_PHP_RATE.toFixed(2)}`;
+        updateState();
+
     </script>
 </body>
 </html>
