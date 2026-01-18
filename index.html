@@ -460,7 +460,7 @@
                     <div id="shipping-manual-notice" class="hidden mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100 relative">
                         <div class="absolute -top-1.5 left-20 w-3 h-3 bg-gray-50 border-t border-l border-gray-100 transform rotate-45"></div>
                         <p class="text-[10px] text-gray-500 leading-snug">
-                            <strong>Manual Override:</strong> You can force enable free shipping if you have a voucher.
+                            <strong>Manual Override:</strong> You can force enable free shipping anytime.
                         </p>
                     </div>
                     
@@ -1132,8 +1132,18 @@
             } else {
                 elToggleShipping.disabled = false; elShippingNoticeBadge.classList.add('hidden'); elShippingManualHelp.classList.remove('hidden');
                 if (!state.userManuallyToggledShipping) {
-                    state.freeShipping = false; elToggleShipping.checked = false; elShippingContainer.classList.remove('hidden');
-                } else { elShippingContainer.classList.toggle('hidden', state.freeShipping); }
+                    if (state.price > 0) {
+                        state.freeShipping = false; 
+                        elToggleShipping.checked = false; 
+                        elShippingContainer.classList.remove('hidden');
+                    } else {
+                        state.freeShipping = true;
+                        elToggleShipping.checked = true;
+                        elShippingContainer.classList.add('hidden');
+                    }
+                } else { 
+                    elShippingContainer.classList.toggle('hidden', state.freeShipping); 
+                }
             }
 
             if (showAddMore && !state.freeShipping) {
