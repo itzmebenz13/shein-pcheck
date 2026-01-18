@@ -1131,8 +1131,19 @@
             } else {
                 elToggleShipping.disabled = false; elShippingNoticeBadge.classList.add('hidden'); elShippingManualHelp.classList.remove('hidden');
                 if (!state.userManuallyToggledShipping) {
-                    state.freeShipping = false; elToggleShipping.checked = false; elShippingContainer.classList.remove('hidden');
-                } else { elShippingContainer.classList.toggle('hidden', state.freeShipping); }
+                    // UPDATED: If price is 0, default to Free Shipping
+                    if (state.price === 0) {
+                        state.freeShipping = true; 
+                        elToggleShipping.checked = true;
+                        elShippingContainer.classList.add('hidden');
+                    } else {
+                        state.freeShipping = false; 
+                        elToggleShipping.checked = false; 
+                        elShippingContainer.classList.remove('hidden');
+                    }
+                } else { 
+                    elShippingContainer.classList.toggle('hidden', state.freeShipping); 
+                }
             }
 
             if (showAddMore && !state.freeShipping) {
@@ -1148,6 +1159,8 @@
             }
 
             let finalShipping = state.freeShipping ? 0 : state.shippingFee;
+            if (state.price === 0) finalShipping = 0; // Force 0 if no item
+
             let totalServiceFee = (state.bookerMode && state.serviceFee > 0) ? state.serviceFee : 0;
             if (totalServiceFee > 0) {
                 elRowServiceFee.classList.remove('hidden'); displayServiceFee.innerText = `+${formatMoney(totalServiceFee)}`;
@@ -1160,7 +1173,9 @@
             displaySubtotal.innerText = formatMoney(state.price);
             displayVoucher.innerText = `-${formatMoney(voucherDiscount)}`;
             displayPoints.innerText = `-${formatMoney(pointsDed)}`;
-            if (state.freeShipping) {
+            
+            // Updated Display Logic: Check if finalShipping is 0
+            if (finalShipping === 0) {
                 displayShipping.innerText = "Free"; displayShipping.className = "text-green-600 font-bold";
             } else {
                 displayShipping.innerText = `+${formatMoney(finalShipping)}`; displayShipping.className = "text-black font-bold";
