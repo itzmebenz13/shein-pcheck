@@ -231,7 +231,7 @@
     <header class="w-full p-4 flex justify-end items-center gap-2 z-50">
         <!-- View Toggle -->
         <button id="btn-view" onclick="toggleView()" class="header-btn w-9 p-0 group" title="Switch View Mode">
-            <i data-lucide="layout-grid" class="w-4 h-4 group-hover:text-brand-600 dark:group-hover:text-brand-400"></i>
+            <i data-lucide="grid-2x2" class="w-4 h-4 group-hover:text-brand-600 dark:group-hover:text-brand-400"></i>
         </button>
 
         <!-- Donate Button -->
@@ -247,7 +247,7 @@
     </header>
 
     <!-- Main Container -->
-    <div class="flex-grow flex flex-col items-center justify-start pt-10 px-4 w-full">
+    <div class="flex-grow flex flex-col items-center justify-start pt-10 px-4 w-full pb-20">
         
         <!-- Header Section -->
         <div class="text-center mb-8 relative w-full max-w-md">
@@ -321,14 +321,14 @@
 
         </div>
 
-        <!-- Footer -->
-        <div class="mt-12 text-center pb-6">
-            <p class="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest hover:text-brand-600 transition-colors cursor-default">
-                © 2026 SynkPH
-            </p>
-        </div>
-
     </div>
+
+    <!-- Fixed Footer -->
+    <footer class="fixed bottom-6 w-full text-center z-40 pointer-events-none">
+        <p class="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest hover:text-brand-600 transition-colors cursor-default pointer-events-auto inline-block bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 dark:border-white/5 shadow-sm">
+            © 2026 SynkPH
+        </p>
+    </footer>
 
     <!-- DONATE MODAL -->
     <div id="donate-modal" class="modal-overlay">
@@ -376,14 +376,12 @@
         const html = document.documentElement;
         const donateModal = document.getElementById('donate-modal');
 
-        // View Modes: Grid (Default) -> List (Wide) -> Dense (Compact Grid)
-        const modes = ['grid', 'list', 'dense'];
-        let currentModeIndex = modes.indexOf(localStorage.getItem('synkph_view_mode') || 'grid');
-        if (currentModeIndex === -1) currentModeIndex = 0;
+        // View Modes: Dense (Default) -> Grid -> List
+        const modes = ['dense', 'grid', 'list'];
+        let currentModeIndex = modes.indexOf(localStorage.getItem('synkph_view_mode') || 'dense');
+        if (currentModeIndex === -1) currentModeIndex = 0; // Default to dense if invalid
 
-        // Apply saved mode on load
-        applyViewMode(modes[currentModeIndex]);
-
+        // Update Theme Icon
         function updateThemeIcon() {
             const isDark = html.classList.contains('dark');
             const icon = isDark ? 'sun' : 'moon';
@@ -391,6 +389,7 @@
             lucide.createIcons();
         }
 
+        // Apply View Mode
         function applyViewMode(mode) {
             // Remove all possible classes first
             toolsGrid.classList.remove('view-list', 'view-dense');
@@ -419,6 +418,7 @@
 
         // Init
         updateThemeIcon();
+        applyViewMode(modes[currentModeIndex]);
 
         // Theme Toggle Logic
         btnTheme.addEventListener('click', () => {
