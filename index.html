@@ -161,8 +161,9 @@
         }
 
 
-        /* 3. COMPACT MODE (3 Cols Desktop, 2 Cols Mobile) */
+        /* 3. COMPACT MODE (3 Cols ALWAYS) */
         #tools-grid.view-compact { 
+            /* Force 3 columns on all screen sizes */
             grid-template-columns: repeat(3, minmax(0, 1fr)); 
             gap: 12px; 
         }
@@ -199,16 +200,30 @@
             font-size: 9px; padding: 2px 6px;
         }
 
-        /* Compact Mobile (Strict 2-Col) */
-        @media (max-width: 1024px) {
-            #tools-grid.view-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
+        /* Compact Mobile Adjustments for 3-Col Fit */
         @media (max-width: 640px) {
-            #tools-grid.view-compact { gap: 10px; }
-            #tools-grid.view-compact .glass-card { padding: 12px; }
-            #tools-grid.view-compact .tool-icon-wrapper { width: 32px; height: 32px; margin-bottom: 8px; }
-            #tools-grid.view-compact .tool-title { font-size: 0.85rem; }
-            #tools-grid.view-compact .tool-tags { display: none; } /* Hide tags only in dense compact mobile to fit */
+            #tools-grid.view-compact { 
+                gap: 8px; /* Tighter gap */
+            }
+            #tools-grid.view-compact .glass-card { 
+                padding: 10px; 
+                border-radius: 12px;
+                /* Center align for App-Drawer style on mobile */
+                align-items: center; 
+                text-align: center;
+            }
+            #tools-grid.view-compact .tool-icon-wrapper { 
+                width: 40px; height: 40px; 
+                margin-bottom: 6px; 
+            }
+            #tools-grid.view-compact .tool-title { 
+                font-size: 0.7rem; /* Smaller font to fit */
+                line-height: 1.1;
+                margin-bottom: 0;
+            }
+            /* Hide description/tags/bg-icon on mobile compact to save space */
+            #tools-grid.view-compact .tool-desc { display: none; } 
+            #tools-grid.view-compact .tool-tags { display: none; } 
             #tools-grid.view-compact .tool-bg-icon { display: none; }
         }
 
