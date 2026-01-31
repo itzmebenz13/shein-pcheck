@@ -30,9 +30,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        /* Prevent transitions on load to stop "flashing".
-           We re-enable this class via JS after load.
-        */
+        /* Prevent transitions on load to stop "flashing". */
         .preload * {
             transition: none !important;
             -webkit-transition: none !important;
@@ -44,11 +42,10 @@
         /* Base Setup - Fixes Overscroll Background */
         html {
             background-color: #f8fafc; /* Light mode bg */
-            min-height: 100%; /* Ensure full height cover */
+            min-height: 100%; 
             height: 100%;
         }
         
-        /* Enable smooth theme switch ONLY after load */
         html.loaded {
             transition: background-color 0.3s;
         }
@@ -59,7 +56,7 @@
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: transparent; /* Body transparent to show HTML bg */
+            background-color: transparent; 
             color: #1e293b;
             transition: color 0.3s;
             overflow-x: hidden;
@@ -95,7 +92,6 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            /* Transition added back manually to avoid Tailwind conflict during load */
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s, background-color 0.3s, border-color 0.3s;
             display: flex;
             flex-direction: column;
@@ -143,174 +139,66 @@
 
         /* --- VIEW MODES --- */
 
-        /* 1. GRID MODE (2 Cols ALWAYS) */
+        /* 1. GRID MODE */
         html[data-view="grid"] #tools-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 16px; 
         }
         html[data-view="grid"] #tools-grid .glass-card { padding: 20px; border-radius: 20px; }
-        
-        /* Removed bg icon in 2-col mode */
         html[data-view="grid"] #tools-grid .tool-bg-icon { display: none; }
-        
         html[data-view="grid"] #tools-grid .tool-icon-wrapper { width: 44px; height: 44px; margin-bottom: 12px; }
         html[data-view="grid"] #tools-grid .tool-title { font-size: 1.1rem; margin-bottom: 6px; }
-        
         html[data-view="grid"] #tools-grid .tool-desc { 
-            font-size: 0.8rem; 
-            line-height: 1.4;
-            margin-bottom: 0;
-            display: -webkit-box;
-            -webkit-line-clamp: 2; 
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            opacity: 0.8;
+            font-size: 0.8rem; line-height: 1.4; margin-bottom: 0;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; opacity: 0.8;
         }
-        
         @media (max-width: 640px) {
-            html[data-view="grid"] #tools-grid { 
-                gap: 10px;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
+            html[data-view="grid"] #tools-grid { gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
             html[data-view="grid"] #tools-grid .glass-card { padding: 14px; border-radius: 16px; }
             html[data-view="grid"] #tools-grid .tool-icon-wrapper { width: 36px; height: 36px; margin-bottom: 8px; }
             html[data-view="grid"] #tools-grid .tool-title { font-size: 0.9rem; margin-bottom: 4px; line-height: 1.2; }
-            html[data-view="grid"] #tools-grid .tool-desc { 
-                font-size: 0.7rem; 
-                -webkit-line-clamp: 2;
-            }
-             html[data-view="grid"] #tools-grid .tool-tags { display: none; }
+            html[data-view="grid"] #tools-grid .tool-desc { font-size: 0.7rem; -webkit-line-clamp: 2; }
+            html[data-view="grid"] #tools-grid .tool-tags { display: none; }
         }
 
-
-        /* 2. COMPACT MODE (3 Cols ALWAYS) */
-        html[data-view="compact"] #tools-grid { 
-            grid-template-columns: repeat(3, minmax(0, 1fr)); 
-            gap: 12px; 
-        }
-        html[data-view="compact"] #tools-grid .glass-card { 
-            padding: 16px; 
-            border-radius: 16px; 
-        }
-        html[data-view="compact"] #tools-grid .tool-bg-icon { 
-            right: -10px; bottom: -10px; opacity: 0.03; transform: scale(0.8);
-        }
-        html[data-view="compact"] #tools-grid .tool-icon-wrapper { 
-            width: 36px; 
-            height: 36px; 
-            margin-bottom: 10px; 
-            border-radius: 10px; 
-        }
-        html[data-view="compact"] #tools-grid .tool-title { 
-            font-size: 0.95rem; 
-            margin-bottom: 4px; 
-        }
+        /* 2. COMPACT MODE */
+        html[data-view="compact"] #tools-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        html[data-view="compact"] #tools-grid .glass-card { padding: 16px; border-radius: 16px; }
+        html[data-view="compact"] #tools-grid .tool-bg-icon { right: -10px; bottom: -10px; opacity: 0.03; transform: scale(0.8); }
+        html[data-view="compact"] #tools-grid .tool-icon-wrapper { width: 36px; height: 36px; margin-bottom: 10px; border-radius: 10px; }
+        html[data-view="compact"] #tools-grid .tool-title { font-size: 0.95rem; margin-bottom: 4px; }
         html[data-view="compact"] #tools-grid .tool-desc { 
-            font-size: 0.7rem; 
-            line-height: 1.35; 
-            display: -webkit-box; 
-            -webkit-line-clamp: 2; 
-            -webkit-box-orient: vertical; 
-            overflow: hidden; 
-            margin-bottom: 10px;
+            font-size: 0.7rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px;
         }
-        html[data-view="compact"] #tools-grid .tool-tags { 
-            display: flex; gap: 4px;
-        } 
-        html[data-view="compact"] #tools-grid .tool-tags span {
-            font-size: 9px; padding: 2px 6px;
-        }
-        html[data-view="compact"] #tools-grid .status-badge {
-            top: 8px; right: 8px; 
-        }
-        html[data-view="compact"] #tools-grid .status-badge span {
-            font-size: 8px; padding: 1px 4px; 
-        }
+        html[data-view="compact"] #tools-grid .tool-tags { display: flex; gap: 4px; } 
+        html[data-view="compact"] #tools-grid .tool-tags span { font-size: 9px; padding: 2px 6px; }
+        html[data-view="compact"] #tools-grid .status-badge { top: 8px; right: 8px; }
+        html[data-view="compact"] #tools-grid .status-badge span { font-size: 8px; padding: 1px 4px; }
 
         @media (max-width: 640px) {
-            html[data-view="compact"] #tools-grid { 
-                gap: 8px; 
-            }
-            html[data-view="compact"] #tools-grid .glass-card { 
-                padding: 10px; 
-                border-radius: 12px;
-                align-items: center; 
-                text-align: center;
-            }
-            html[data-view="compact"] #tools-grid .tool-icon-wrapper { 
-                width: 40px; height: 40px; 
-                margin-bottom: 6px; 
-            }
-            html[data-view="compact"] #tools-grid .tool-title { 
-                font-size: 0.7rem; 
-                line-height: 1.1;
-                margin-bottom: 0;
-            }
+            html[data-view="compact"] #tools-grid { gap: 8px; }
+            html[data-view="compact"] #tools-grid .glass-card { padding: 10px; border-radius: 12px; align-items: center; text-align: center; }
+            html[data-view="compact"] #tools-grid .tool-icon-wrapper { width: 40px; height: 40px; margin-bottom: 6px; }
+            html[data-view="compact"] #tools-grid .tool-title { font-size: 0.7rem; line-height: 1.1; margin-bottom: 0; }
             html[data-view="compact"] #tools-grid .tool-desc { display: none; } 
             html[data-view="compact"] #tools-grid .tool-tags { display: none; } 
             html[data-view="compact"] #tools-grid .tool-bg-icon { display: none; }
-            html[data-view="compact"] #tools-grid .status-badge {
-                top: 6px; right: 6px;
-                transform: scale(0.9);
-            }
+            html[data-view="compact"] #tools-grid .status-badge { top: 6px; right: 6px; transform: scale(0.9); }
         }
 
+        /* 3. STANDARD MODE */
+        html[data-view="standard"] #tools-grid { grid-template-columns: 1fr; max-width: 700px; margin: 0 auto; gap: 16px; }
+        html[data-view="standard"] #tools-grid .glass-card { flex-direction: row; align-items: center; padding: 24px; border-radius: 24px; text-align: left; }
+        html[data-view="standard"] #tools-grid .tool-icon-wrapper { width: 56px; height: 56px; margin-bottom: 0; margin-right: 24px; flex-shrink: 0; }
+        html[data-view="standard"] #tools-grid .tool-content { flex: 1; }
+        html[data-view="standard"] #tools-grid .tool-title { font-size: 1.2rem; margin-bottom: 4px; }
+        html[data-view="standard"] #tools-grid .tool-desc { 
+            font-size: 0.9rem; margin-bottom: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; opacity: 0.8;
+        }
+        html[data-view="standard"] #tools-grid .tool-bg-icon { display: none; }
+        html[data-view="standard"] #tools-grid .tool-tags { margin-top: 0; margin-left: auto; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+        html[data-view="standard"] #tools-grid .status-badge { position: relative; top: auto; right: auto; margin-bottom: 8px; align-self: flex-end; }
 
-        /* 3. STANDARD MODE (1 Col ALWAYS - List View) */
-        html[data-view="standard"] #tools-grid {
-            grid-template-columns: 1fr;
-            max-width: 700px;
-            margin: 0 auto;
-            gap: 16px;
-        }
-        html[data-view="standard"] #tools-grid .glass-card {
-            flex-direction: row;
-            align-items: center;
-            padding: 24px;
-            border-radius: 24px;
-            text-align: left;
-        }
-        html[data-view="standard"] #tools-grid .tool-icon-wrapper {
-            width: 56px; height: 56px;
-            margin-bottom: 0;
-            margin-right: 24px;
-            flex-shrink: 0;
-        }
-        html[data-view="standard"] #tools-grid .tool-content {
-            flex: 1;
-        }
-        html[data-view="standard"] #tools-grid .tool-title {
-            font-size: 1.2rem;
-            margin-bottom: 4px;
-        }
-        html[data-view="standard"] #tools-grid .tool-desc {
-            font-size: 0.9rem;
-            margin-bottom: 0;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            opacity: 0.8;
-        }
-        html[data-view="standard"] #tools-grid .tool-bg-icon {
-            display: none; /* Keep clean */
-        }
-        html[data-view="standard"] #tools-grid .tool-tags {
-            margin-top: 0;
-            margin-left: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            align-items: flex-end;
-        }
-        html[data-view="standard"] #tools-grid .status-badge {
-            position: relative;
-            top: auto; right: auto;
-            margin-bottom: 8px;
-            align-self: flex-end;
-        }
-
-        /* Standard Mobile */
         @media (max-width: 640px) {
              html[data-view="standard"] #tools-grid .glass-card { padding: 16px; border-radius: 18px; }
              html[data-view="standard"] #tools-grid .tool-icon-wrapper { width: 44px; height: 44px; margin-right: 16px; }
@@ -320,7 +208,6 @@
              html[data-view="standard"] #tools-grid .status-badge { position: absolute; top: 12px; right: 12px; }
         }
 
-
         /* TYPING EFFECT CURSOR */
         .typing-cursor::after {
             content: '|';
@@ -329,21 +216,34 @@
         }
         @keyframes blink { 50% { opacity: 0; } }
 
-        /* Modal Styles */
+        /* Modal Styles - Fixed Blink Issue */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.4); 
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             display: flex; align-items: center; justify-content: center;
-            z-index: 100; opacity: 0; pointer-events: none; transition: all 0.3s;
+            z-index: 100; 
+            
+            /* Use visibility/opacity instead of pointer-events for smooth transition */
+            opacity: 0; 
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal-overlay.show { 
+            opacity: 1; 
+            visibility: visible;
+        }
         
         .modal-card {
             background: rgba(255, 255, 255, 0.95);
             width: 90%; max-width: 320px; border-radius: 24px;
-            padding: 24px; transform: scale(0.95) translateY(10px); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            padding: 24px; 
+            transform: scale(0.95) translateY(10px); 
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             border: 1px solid rgba(255,255,255,1);
+            will-change: transform; /* Hint for smoother animation */
         }
         .modal-overlay.show .modal-card { transform: scale(1) translateY(0); }
         
@@ -430,7 +330,6 @@
         }
     </script>
 </head>
-<!-- Added 'preload' class to block transitions on load -->
 <body class="antialiased min-h-screen w-full overflow-x-hidden relative selection:bg-brand-200 selection:text-brand-900 text-slate-800 dark:text-slate-100 flex flex-col preload">
 
     <!-- Decorative Background -->
@@ -496,7 +395,7 @@
             </div>
         </div>
 
-        <!-- Cards Grid - No transition class initially -->
+        <!-- Cards Grid -->
         <div id="tools-grid" class="grid w-full max-w-5xl px-2">
             
             <!-- Tool 1: SHEIN PCheck -->
@@ -612,7 +511,6 @@
     <!-- DONATE MODAL -->
     <div id="donate-modal" class="modal-overlay">
         <div class="modal-card text-center relative overflow-visible">
-            <!-- Removed Gradient as requested -->
             
             <div class="mb-5">
                 <div class="w-12 h-12 bg-pink-50 dark:bg-pink-900/20 text-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl shadow-inner ring-1 ring-pink-100 dark:ring-pink-900/30">
@@ -630,7 +528,7 @@
 
                 <!-- Bank Header -->
                 <div class="flex items-center justify-between mb-5 relative z-10">
-                    <!-- MariBank Logo with Dark Mode Inversion -->
+                    <!-- MariBank Logo -->
                     <img src="https://banking-aka-storage.maribank.com.sg/maribank/sg/app_infra/live/ccf/logo/logo_text.svg" alt="MariBank" class="h-5 w-auto object-contain dark:brightness-0 dark:invert">
                     
                     <!-- Referral Code with Tooltip -->
@@ -673,6 +571,12 @@
                     </div>
                 </div>
             </div>
+
+            <!-- New Open MariBank Button -->
+            <a href="https://seabankph.onelink.me/RMD2/qbs7mr9j" target="_blank" class="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold py-3.5 rounded-xl text-xs hover:opacity-90 hover:scale-[1.02] transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 mb-3">
+                <span>Open MariBank</span>
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </a>
 
             <button onclick="closeDonate()" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3.5 rounded-xl text-xs hover:opacity-90 hover:scale-[1.01] active:scale-[0.98] transition-all shadow-lg">
                 Maybe Later
