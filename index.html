@@ -43,6 +43,7 @@
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
             background-color: #f6f6f6;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         /* SHEIN Form Styles */
@@ -50,6 +51,7 @@
             background-color: white;
             padding: 16px;
             margin-bottom: 10px;
+            transition: background-color 0.3s;
         }
 
         .shein-input {
@@ -59,7 +61,7 @@
             border: none;
             border-bottom: 1px solid #e5e7eb;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, color 0.3s;
             font-weight: 600;
             background: transparent;
             border-radius: 0; /* Mobile fix */
@@ -292,6 +294,140 @@
         }
         .menu-item:hover { background-color: #f9fafb; }
         .menu-item i { width: 24px; text-align: center; margin-right: 12px; }
+
+        /* --- DARK MODE STYLES --- */
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        
+        /* Header */
+        body.dark-mode header,
+        body.dark-mode .shein-input-group,
+        body.dark-mode #sidebar,
+        body.dark-mode .modal-card,
+        body.dark-mode #qr-container,
+        body.dark-mode #acl-main .bg-white {
+            background-color: #1e1e1e !important;
+            color: #ffffff !important;
+            border-color: #333;
+        }
+        
+        body.dark-mode .max-w-md {
+            background-color: #121212 !important;
+        }
+
+        body.dark-mode .bg-gray-100,
+        body.dark-mode .bg-gray-50 {
+            background-color: #181818 !important;
+            color: #e5e5e5 !important;
+            border-color: #333;
+        }
+
+        /* Text Overrides */
+        body.dark-mode .text-gray-800,
+        body.dark-mode .text-black,
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
+        body.dark-mode .shein-input {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .text-gray-600,
+        body.dark-mode .text-gray-500,
+        body.dark-mode .shein-label,
+        body.dark-mode .menu-item {
+            color: #a3a3a3 !important;
+        }
+
+        /* Inputs */
+        body.dark-mode .shein-input {
+            border-bottom-color: #444;
+        }
+        body.dark-mode .shein-input:focus {
+            border-bottom-color: #ffffff;
+        }
+
+        /* Sidebar */
+        body.dark-mode #sidebar {
+            background-color: #1e1e1e;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+        body.dark-mode .menu-item:hover {
+            background-color: #2d2d2d;
+        }
+        body.dark-mode .border-gray-100 {
+            border-color: #333 !important;
+        }
+
+        /* Vouchers */
+        body.dark-mode .voucher-ticket {
+            background-color: #262626;
+            border-color: #404040;
+        }
+        body.dark-mode .voucher-ticket.active {
+            background-color: #3f1818; /* Dark red tint */
+            border-color: #ef4444;
+        }
+        body.dark-mode .voucher-ticket.disabled {
+            background-color: #1a1a1a;
+            border-color: #333;
+        }
+        body.dark-mode .voucher-title {
+            color: #fff;
+        }
+        body.dark-mode .voucher-cutout-top,
+        body.dark-mode .voucher-cutout-bottom {
+            background-color: #1e1e1e; /* Match container bg */
+        }
+        
+        /* Receipt */
+        body.dark-mode #receipt-content {
+            background-color: #262626;
+            border-color: #444;
+            color: #fff;
+        }
+        body.dark-mode .receipt-line {
+            color: #e5e5e5;
+        }
+
+        /* Buttons & Badges */
+        body.dark-mode #btn-theme i {
+            color: #fbbf24; /* Amber sun for dark mode */
+        }
+        body.dark-mode #btn-checkout {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        body.dark-mode #btn-generate-receipt {
+            background-color: transparent;
+            color: #ffffff;
+            border-color: #ffffff;
+        }
+        body.dark-mode #btn-generate-receipt:hover {
+            background-color: #2d2d2d;
+        }
+        
+        /* Footer */
+        body.dark-mode .fixed.bottom-0 {
+            background-color: #1e1e1e;
+        }
+        
+        /* Status Bar */
+        body.dark-mode .status-weekday {
+            background-color: #333;
+            color: #ccc;
+        }
+        body.dark-mode .status-weekend {
+            background-color: #064e3b;
+            color: #a7f3d0;
+        }
+
+        /* ACL */
+        body.dark-mode #acl-link-input {
+            background-color: #2d2d2d;
+            border-color: #444;
+            color: white;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen pb-24">
@@ -323,7 +459,7 @@
             </div>
         </div>
         <div class="absolute bottom-4 left-0 w-full text-center text-[10px] text-gray-400 p-4">
-            v1.0.1 • Made with <span class="text-red-500">❤</span> by Joven Campomanes
+            v1.0.2 • Made with <span class="text-red-500">❤</span> by Joven Campomanes
         </div>
     </div>
 
@@ -336,6 +472,10 @@
                 <h1 class="text-lg font-black italic tracking-tighter">SHEIN <span class="text-black font-normal not-italic text-sm">PCheck</span></h1>
             </div>
             <div class="flex items-center gap-3">
+                 <!-- Theme Toggle -->
+                 <button class="text-gray-600 hover:text-black transition-colors" id="btn-theme" title="Toggle Dark Mode">
+                     <i class="fas fa-moon"></i>
+                 </button>
                  <button class="text-gray-600 hover:text-black" id="btn-history" title="History"><i class="fas fa-history"></i></button>
                  <button class="text-sm text-black font-medium" id="btn-reset">Reset</button>
             </div>
@@ -703,11 +843,17 @@
         
         // SORTED VOUCHERS: HIGHEST PERCENTAGE FIRST
         const PRESET_VOUCHERS = [
+            // 73%
+            { percent: 73, cap: 473, min: 0, isNew: true },
+
             // 70%
             { percent: 70, cap: 414, min: 0, isNew: true },
             
             // 67%
             { percent: 67, cap: 887, min: 585, isNew: true },
+
+            // 66%
+            { percent: 66, cap: 827, min: 585, isNew: true },
             
             // 65%
             { percent: 65, cap: 296, min: 0, isNew: true },
@@ -805,6 +951,7 @@
         const clearHistory = document.getElementById('clear-history');
         const historyList = document.getElementById('history-list');
         const elStatusBar = document.getElementById('status-bar');
+        const btnTheme = document.getElementById('btn-theme');
 
         // State
         let state = {
@@ -824,6 +971,13 @@
             elStatusBar.className = "status-bar status-weekday";
         }
         document.getElementById('points-rate-display').innerText = `100 Pts ≈ ₱${USD_TO_PHP_RATE.toFixed(2)}`;
+        
+        // Theme Init
+        if (localStorage.getItem('shein_pcal_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            btnTheme.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+
         loadHistory();
         updateState();
 
@@ -860,6 +1014,14 @@
                 }
             }
         }
+
+        // --- Theme Toggle ---
+        btnTheme.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('shein_pcal_theme', isDark ? 'dark' : 'light');
+            btnTheme.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        });
 
         // --- ACL Logic ---
         window.checkAclAuth = function() {
