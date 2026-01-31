@@ -6,26 +6,72 @@
     <title>SynkPH</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <meta name="theme-color" content="#ffffff">
+    <!-- Initial Theme Color (Will be updated by script immediately) -->
+    <meta name="theme-color" content="#f8fafc">
 
-    <!-- Theme Init -->
+    <!-- CRITICAL: Theme & View Init in Head to prevent FOUC/Flash -->
     <script>
-        if (localStorage.getItem('shein_pcal_theme') === 'dark') {
+        // 1. Immediate Theme Application
+        const savedTheme = localStorage.getItem('shein_pcal_theme');
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        
+        if (savedTheme === 'dark') {
             document.documentElement.classList.add('dark');
+            metaTheme.setAttribute('content', '#0f172a');
+        } else {
+            metaTheme.setAttribute('content', '#f8fafc');
         }
+
+        // 2. Immediate View Application
+        const savedView = localStorage.getItem('synkph_view_mode') || 'compact';
+        document.documentElement.setAttribute('data-view', savedView);
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+        /* Prevent transitions on load to stop "flashing".
+           We re-enable this class via JS after load.
+        */
+        .preload * {
+            transition: none !important;
+            -webkit-transition: none !important;
+            -moz-transition: none !important;
+            -ms-transition: none !important;
+            -o-transition: none !important;
+        }
+
+        /* Base Setup - Fixes Overscroll Background */
+        html {
+            background-color: #f8fafc; /* Light mode bg */
+            min-height: 100%; /* Ensure full height cover */
+            height: 100%;
+        }
+        
+        /* Enable smooth theme switch ONLY after load */
+        html.loaded {
+            transition: background-color 0.3s;
+        }
+
+        html.dark {
+            background-color: #0f172a; /* Dark mode bg */
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f8fafc;
+            background-color: transparent; /* Body transparent to show HTML bg */
             color: #1e293b;
-            transition: background-color 0.3s, color 0.3s;
+            transition: color 0.3s;
             overflow-x: hidden;
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        html.dark body {
+            color: #f1f5f9;
         }
 
         /* Subtle Grid Background */
@@ -35,12 +81,6 @@
                               linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
             mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-        }
-
-        /* Dark Mode */
-        html.dark body {
-            background-color: #0f172a;
-            color: #f1f5f9;
         }
 
         html.dark .bg-grid-pattern {
@@ -55,7 +95,8 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Transition added back manually to avoid Tailwind conflict during load */
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s, background-color 0.3s, border-color 0.3s;
             display: flex;
             flex-direction: column;
             text-align: left;
@@ -103,19 +144,19 @@
         /* --- VIEW MODES --- */
 
         /* 1. GRID MODE (2 Cols ALWAYS) */
-        #tools-grid.view-grid {
+        html[data-view="grid"] #tools-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 16px; 
         }
-        #tools-grid.view-grid .glass-card { padding: 20px; border-radius: 20px; }
+        html[data-view="grid"] #tools-grid .glass-card { padding: 20px; border-radius: 20px; }
         
-        /* Removed bg icon in 2-col mode as requested */
-        #tools-grid.view-grid .tool-bg-icon { display: none; }
+        /* Removed bg icon in 2-col mode */
+        html[data-view="grid"] #tools-grid .tool-bg-icon { display: none; }
         
-        #tools-grid.view-grid .tool-icon-wrapper { width: 44px; height: 44px; margin-bottom: 12px; }
-        #tools-grid.view-grid .tool-title { font-size: 1.1rem; margin-bottom: 6px; }
+        html[data-view="grid"] #tools-grid .tool-icon-wrapper { width: 44px; height: 44px; margin-bottom: 12px; }
+        html[data-view="grid"] #tools-grid .tool-title { font-size: 1.1rem; margin-bottom: 6px; }
         
-        #tools-grid.view-grid .tool-desc { 
+        html[data-view="grid"] #tools-grid .tool-desc { 
             font-size: 0.8rem; 
             line-height: 1.4;
             margin-bottom: 0;
@@ -127,44 +168,44 @@
         }
         
         @media (max-width: 640px) {
-            #tools-grid.view-grid { 
+            html[data-view="grid"] #tools-grid { 
                 gap: 10px;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
-            #tools-grid.view-grid .glass-card { padding: 14px; border-radius: 16px; }
-            #tools-grid.view-grid .tool-icon-wrapper { width: 36px; height: 36px; margin-bottom: 8px; }
-            #tools-grid.view-grid .tool-title { font-size: 0.9rem; margin-bottom: 4px; line-height: 1.2; }
-            #tools-grid.view-grid .tool-desc { 
+            html[data-view="grid"] #tools-grid .glass-card { padding: 14px; border-radius: 16px; }
+            html[data-view="grid"] #tools-grid .tool-icon-wrapper { width: 36px; height: 36px; margin-bottom: 8px; }
+            html[data-view="grid"] #tools-grid .tool-title { font-size: 0.9rem; margin-bottom: 4px; line-height: 1.2; }
+            html[data-view="grid"] #tools-grid .tool-desc { 
                 font-size: 0.7rem; 
                 -webkit-line-clamp: 2;
             }
-             #tools-grid.view-grid .tool-tags { display: none; }
+             html[data-view="grid"] #tools-grid .tool-tags { display: none; }
         }
 
 
         /* 2. COMPACT MODE (3 Cols ALWAYS) */
-        #tools-grid.view-compact { 
+        html[data-view="compact"] #tools-grid { 
             grid-template-columns: repeat(3, minmax(0, 1fr)); 
             gap: 12px; 
         }
-        #tools-grid.view-compact .glass-card { 
+        html[data-view="compact"] #tools-grid .glass-card { 
             padding: 16px; 
             border-radius: 16px; 
         }
-        #tools-grid.view-compact .tool-bg-icon { 
+        html[data-view="compact"] #tools-grid .tool-bg-icon { 
             right: -10px; bottom: -10px; opacity: 0.03; transform: scale(0.8);
         }
-        #tools-grid.view-compact .tool-icon-wrapper { 
+        html[data-view="compact"] #tools-grid .tool-icon-wrapper { 
             width: 36px; 
             height: 36px; 
             margin-bottom: 10px; 
             border-radius: 10px; 
         }
-        #tools-grid.view-compact .tool-title { 
+        html[data-view="compact"] #tools-grid .tool-title { 
             font-size: 0.95rem; 
             margin-bottom: 4px; 
         }
-        #tools-grid.view-compact .tool-desc { 
+        html[data-view="compact"] #tools-grid .tool-desc { 
             font-size: 0.7rem; 
             line-height: 1.35; 
             display: -webkit-box; 
@@ -173,42 +214,42 @@
             overflow: hidden; 
             margin-bottom: 10px;
         }
-        #tools-grid.view-compact .tool-tags { 
+        html[data-view="compact"] #tools-grid .tool-tags { 
             display: flex; gap: 4px;
         } 
-        #tools-grid.view-compact .tool-tags span {
+        html[data-view="compact"] #tools-grid .tool-tags span {
             font-size: 9px; padding: 2px 6px;
         }
-        #tools-grid.view-compact .status-badge {
+        html[data-view="compact"] #tools-grid .status-badge {
             top: 8px; right: 8px; 
         }
-        #tools-grid.view-compact .status-badge span {
+        html[data-view="compact"] #tools-grid .status-badge span {
             font-size: 8px; padding: 1px 4px; 
         }
 
         @media (max-width: 640px) {
-            #tools-grid.view-compact { 
+            html[data-view="compact"] #tools-grid { 
                 gap: 8px; 
             }
-            #tools-grid.view-compact .glass-card { 
+            html[data-view="compact"] #tools-grid .glass-card { 
                 padding: 10px; 
                 border-radius: 12px;
                 align-items: center; 
                 text-align: center;
             }
-            #tools-grid.view-compact .tool-icon-wrapper { 
+            html[data-view="compact"] #tools-grid .tool-icon-wrapper { 
                 width: 40px; height: 40px; 
                 margin-bottom: 6px; 
             }
-            #tools-grid.view-compact .tool-title { 
+            html[data-view="compact"] #tools-grid .tool-title { 
                 font-size: 0.7rem; 
                 line-height: 1.1;
                 margin-bottom: 0;
             }
-            #tools-grid.view-compact .tool-desc { display: none; } 
-            #tools-grid.view-compact .tool-tags { display: none; } 
-            #tools-grid.view-compact .tool-bg-icon { display: none; }
-            #tools-grid.view-compact .status-badge {
+            html[data-view="compact"] #tools-grid .tool-desc { display: none; } 
+            html[data-view="compact"] #tools-grid .tool-tags { display: none; } 
+            html[data-view="compact"] #tools-grid .tool-bg-icon { display: none; }
+            html[data-view="compact"] #tools-grid .status-badge {
                 top: 6px; right: 6px;
                 transform: scale(0.9);
             }
@@ -216,33 +257,33 @@
 
 
         /* 3. STANDARD MODE (1 Col ALWAYS - List View) */
-        #tools-grid.view-standard {
+        html[data-view="standard"] #tools-grid {
             grid-template-columns: 1fr;
             max-width: 700px;
             margin: 0 auto;
             gap: 16px;
         }
-        #tools-grid.view-standard .glass-card {
+        html[data-view="standard"] #tools-grid .glass-card {
             flex-direction: row;
             align-items: center;
             padding: 24px;
             border-radius: 24px;
             text-align: left;
         }
-        #tools-grid.view-standard .tool-icon-wrapper {
+        html[data-view="standard"] #tools-grid .tool-icon-wrapper {
             width: 56px; height: 56px;
             margin-bottom: 0;
             margin-right: 24px;
             flex-shrink: 0;
         }
-        #tools-grid.view-standard .tool-content {
+        html[data-view="standard"] #tools-grid .tool-content {
             flex: 1;
         }
-        #tools-grid.view-standard .tool-title {
+        html[data-view="standard"] #tools-grid .tool-title {
             font-size: 1.2rem;
             margin-bottom: 4px;
         }
-        #tools-grid.view-standard .tool-desc {
+        html[data-view="standard"] #tools-grid .tool-desc {
             font-size: 0.9rem;
             margin-bottom: 0;
             display: -webkit-box;
@@ -251,10 +292,10 @@
             overflow: hidden;
             opacity: 0.8;
         }
-        #tools-grid.view-standard .tool-bg-icon {
+        html[data-view="standard"] #tools-grid .tool-bg-icon {
             display: none; /* Keep clean */
         }
-        #tools-grid.view-standard .tool-tags {
+        html[data-view="standard"] #tools-grid .tool-tags {
             margin-top: 0;
             margin-left: auto;
             display: flex;
@@ -262,7 +303,7 @@
             gap: 4px;
             align-items: flex-end;
         }
-        #tools-grid.view-standard .status-badge {
+        html[data-view="standard"] #tools-grid .status-badge {
             position: relative;
             top: auto; right: auto;
             margin-bottom: 8px;
@@ -271,12 +312,12 @@
 
         /* Standard Mobile */
         @media (max-width: 640px) {
-             #tools-grid.view-standard .glass-card { padding: 16px; border-radius: 18px; }
-             #tools-grid.view-standard .tool-icon-wrapper { width: 44px; height: 44px; margin-right: 16px; }
-             #tools-grid.view-standard .tool-title { font-size: 1rem; }
-             #tools-grid.view-standard .tool-desc { font-size: 0.75rem; }
-             #tools-grid.view-standard .tool-tags { display: none; }
-             #tools-grid.view-standard .status-badge { position: absolute; top: 12px; right: 12px; }
+             html[data-view="standard"] #tools-grid .glass-card { padding: 16px; border-radius: 18px; }
+             html[data-view="standard"] #tools-grid .tool-icon-wrapper { width: 44px; height: 44px; margin-right: 16px; }
+             html[data-view="standard"] #tools-grid .tool-title { font-size: 1rem; }
+             html[data-view="standard"] #tools-grid .tool-desc { font-size: 0.75rem; }
+             html[data-view="standard"] #tools-grid .tool-tags { display: none; }
+             html[data-view="standard"] #tools-grid .status-badge { position: absolute; top: 12px; right: 12px; }
         }
 
 
@@ -389,7 +430,8 @@
         }
     </script>
 </head>
-<body class="antialiased min-h-screen w-full overflow-x-hidden relative selection:bg-brand-200 selection:text-brand-900 text-slate-800 dark:text-slate-100 flex flex-col">
+<!-- Added 'preload' class to block transitions on load -->
+<body class="antialiased min-h-screen w-full overflow-x-hidden relative selection:bg-brand-200 selection:text-brand-900 text-slate-800 dark:text-slate-100 flex flex-col preload">
 
     <!-- Decorative Background -->
     <div class="fixed inset-0 -z-20 bg-grid-pattern opacity-60"></div>
@@ -454,8 +496,8 @@
             </div>
         </div>
 
-        <!-- Cards Grid -->
-        <div id="tools-grid" class="grid w-full max-w-5xl px-2 transition-all duration-300">
+        <!-- Cards Grid - No transition class initially -->
+        <div id="tools-grid" class="grid w-full max-w-5xl px-2">
             
             <!-- Tool 1: SHEIN PCheck -->
             <a href="pcheck.html" class="glass-card p-6 rounded-3xl group relative overflow-hidden tool-item" data-name="shein pcheck calculator">
@@ -631,26 +673,38 @@
         let currentModeIndex = modes.indexOf(localStorage.getItem('synkph_view_mode') || 'compact');
         if (currentModeIndex === -1) currentModeIndex = 0;
 
+        // Init UI states immediately
+        function init() {
+            // Restore transitions after a brief timeout to allow initial layout to settle
+            setTimeout(() => {
+                document.body.classList.remove('preload');
+                html.classList.add('loaded'); // Enable theme transition on HTML
+                toolsGrid.classList.add('transition-all', 'duration-300'); // Re-enable grid transition
+            }, 100);
+
+            updateThemeIcon();
+            applyViewMode(modes[currentModeIndex]);
+            typeEffect();
+        }
+
         // Update Theme Icon
         function updateThemeIcon() {
             const isDark = html.classList.contains('dark');
             const icon = isDark ? 'sun' : 'moon';
             btnTheme.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"></i>`;
             lucide.createIcons();
+            
+            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            metaTheme.setAttribute('content', isDark ? '#0f172a' : '#f8fafc');
         }
 
         // Apply View Mode
         function applyViewMode(mode) {
-            // Remove all possible classes first
-            toolsGrid.classList.remove('view-standard', 'view-compact', 'view-grid');
+            document.documentElement.setAttribute('data-view', mode);
             
-            // Add specific class
-            toolsGrid.classList.add(`view-${mode}`);
-            
-            // Update Icon
             let icon = 'grid-3x3'; // Default compact
-            if (mode === 'grid') icon = 'grid-2x2'; // 2x2 for Grid
-            if (mode === 'standard') icon = 'list'; // List for Standard
+            if (mode === 'grid') icon = 'grid-2x2';
+            if (mode === 'standard') icon = 'list';
             
             btnView.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"></i>`;
             lucide.createIcons();
@@ -671,7 +725,6 @@
         
         function typeEffect() {
             const currentPhrase = phrases[phraseIndex];
-            
             if (isDeleting) {
                 typewriterEl.textContent = currentPhrase.substring(0, charIndex - 1);
                 charIndex--;
@@ -681,7 +734,7 @@
             }
 
             if (!isDeleting && charIndex === currentPhrase.length) {
-                setTimeout(() => isDeleting = true, 2000); // Pause before deleting
+                setTimeout(() => isDeleting = true, 2000); 
             } else if (isDeleting && charIndex === 0) {
                 isDeleting = false;
                 phraseIndex = (phraseIndex + 1) % phrases.length;
@@ -691,10 +744,8 @@
             setTimeout(typeEffect, speed);
         }
 
-        // Init
-        updateThemeIcon();
-        applyViewMode(modes[currentModeIndex]);
-        setTimeout(typeEffect, 1000); // Start typing after load
+        // Run Init
+        init();
 
         // Theme Toggle Logic
         btnTheme.addEventListener('click', () => {
@@ -708,7 +759,6 @@
         function filterTools() {
             const query = searchInput.value.toLowerCase();
             const tools = document.querySelectorAll('.tool-item');
-            
             tools.forEach(tool => {
                 const name = tool.getAttribute('data-name');
                 if (name.includes(query)) {
@@ -741,7 +791,6 @@
             });
         }
         
-        // Close on background click
         donateModal.addEventListener('click', (e) => {
             if(e.target === donateModal) closeDonate();
         });
