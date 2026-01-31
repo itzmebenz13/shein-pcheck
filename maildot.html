@@ -66,10 +66,13 @@
         .email-text {
             font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 500;
             word-break: break-all; color: #333;
-            padding: 4px 0; display: block; flex: 1;
+            padding: 4px 0; display: block; flex: 1; transition: color 0.2s;
         }
         html.dark-mode .email-text { color: #e5e5e5; }
+        
+        /* State Colors */
         .email-text.copied { color: #16a34a !important; } /* Green when copied */
+        .email-text.sold { color: #ef4444 !important; text-decoration: line-through; opacity: 0.8; } /* Red when sold */
 
         .copy-btn-icon {
             padding: 4px 8px; color: #9ca3af; font-size: 14px;
@@ -77,6 +80,9 @@
         }
         .copy-btn-icon:hover { color: #2563eb; }
         html.dark-mode .copy-btn-icon:hover { color: #60a5fa; }
+        
+        /* Locked Icon */
+        .copy-btn-icon.locked { cursor: not-allowed; color: #ef4444 !important; }
 
         /* Controls Row */
         .item-controls { display: flex; gap: 8px; align-items: center; }
@@ -134,9 +140,23 @@
         .saved-email-row:hover { background-color: #f9fafb; }
         html.dark-mode .saved-email-row { border-color: #333; }
         html.dark-mode .saved-email-row:hover { background-color: #262626; }
+
+        /* Number Badge */
+        .row-number {
+            font-size: 10px; color: #9ca3af; font-family: monospace;
+            min-width: 24px; text-align: right; margin-right: 8px;
+            user-select: none;
+        }
+        
+        /* Batch Input */
+        .batch-container {
+            background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+            padding: 8px; margin-bottom: 12px; display: flex; gap: 8px; align-items: center;
+        }
+        html.dark-mode .batch-container { background-color: #1e1e1e; border-color: #333; }
     </style>
 </head>
-<body class="min-h-screen pb-10">
+<body class="min-h-screen pb-24"> <!-- Added padding bottom for fixed elements if needed -->
 
     <div class="max-w-md mx-auto bg-gray-50 min-h-screen relative shadow-2xl">
         
@@ -220,11 +240,19 @@
                 </div>
             </div>
 
-            <!-- Action Bar (Hidden by default) -->
+            <!-- Action Bar -->
             <div id="action-bar" class="flex justify-between items-center mb-3 hidden">
                 <span class="text-xs font-bold text-gray-500" id="result-count">0 Results</span>
                 <button id="btn-copy-all" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded hover:bg-blue-100">
                     <i class="far fa-copy mr-1"></i> Copy All
+                </button>
+            </div>
+
+            <!-- BATCH ACTION BAR (New) -->
+            <div id="batch-bar" class="hidden batch-container">
+                <input type="text" id="batch-input" class="md-input text-xs h-8 py-1 flex-1" placeholder="e.g. 1-5 (range) or 1-3-5-8 (list)">
+                <button onclick="applyBatchSold()" class="text-xs font-bold bg-red-100 text-red-600 px-3 py-2 rounded border border-red-200 hover:bg-red-200">
+                    Mark SOLD
                 </button>
             </div>
 
@@ -318,8 +346,10 @@
         const btnGenerate = document.getElementById('btn-generate');
         const resultsList = document.getElementById('results-list');
         const actionBar = document.getElementById('action-bar');
+        const batchBar = document.getElementById('batch-bar'); 
         const resultCount = document.getElementById('result-count');
         const btnCopyAll = document.getElementById('btn-copy-all');
+        const batchInput = document.getElementById('batch-input');
         
         // Data Modal
         const btnData = document.getElementById('btn-data');
@@ -339,6 +369,7 @@
         let db = JSON.parse(localStorage.getItem('maildot_db') || '{}');
         let session = JSON.parse(localStorage.getItem('maildot_session') || '{}');
         let savedEmails = JSON.parse(localStorage.getItem('maildot_saved_emails') || '[]');
+        let currentEmails = []; // Store current generated list for batch ops
 
         // Stats Elements
         const elStatToday = document.getElementById('stat-today');
@@ -351,7 +382,6 @@
         if (session.email) {
             inputEmail.value = session.email;
             inputLimit.value = session.limit || "50";
-            // Auto-generate if session exists (Smart Protection)
             setTimeout(() => btnGenerate.click(), 100);
         }
         updateStats();
@@ -364,16 +394,85 @@
             const email = inputEmail.value.trim();
             if (!email.includes('@')) { alert('Invalid Email'); return; }
 
-            saveSession(); // Ensure session saved
+            saveSession();
             const limitVal = parseInt(inputLimit.value);
             let combos = getCombinations(email);
+            const totalPossible = combos.length;
 
             if (limitVal > 0 && combos.length > limitVal) {
                 combos = combos.slice(0, limitVal);
             }
-
-            renderList(combos);
+            
+            currentEmails = combos; // Save for batch access
+            renderList(combos, totalPossible);
         });
+
+        // Batch Action
+        window.applyBatchSold = function() {
+            const val = batchInput.value.trim();
+            if (!val) return;
+            
+            let indices = new Set();
+            
+            // Normalize dashes
+            const normalized = val.replace(/-+/g, '-');
+            
+            // Check heuristic: 
+            // If strictly numbers and dashes (no commas), we interpret based on count
+            if (/^[\d-]+$/.test(normalized) && !normalized.includes(',')) {
+                const parts = normalized.split('-').filter(s => s);
+                if (parts.length === 2) {
+                    // Assume Range 1-5
+                    const start = parseInt(parts[0]);
+                    const end = parseInt(parts[1]);
+                    if (start <= end) {
+                        for(let i=start; i<=end; i++) indices.add(i);
+                    }
+                } else {
+                    // Assume List 1-3-5-8
+                    parts.forEach(p => indices.add(parseInt(p)));
+                }
+            } else {
+                // Fallback to standard parsing (commas for list, dash for range)
+                const segments = val.split(/[,\s]+/);
+                segments.forEach(seg => {
+                    if (seg.includes('-')) {
+                        const rangeParts = seg.split('-');
+                        if (rangeParts.length === 2) {
+                            const start = parseInt(rangeParts[0]);
+                            const end = parseInt(rangeParts[1]);
+                            if (!isNaN(start) && !isNaN(end) && start <= end) {
+                                for(let i=start; i<=end; i++) indices.add(i);
+                            }
+                        }
+                    } else {
+                        const num = parseInt(seg);
+                        if (!isNaN(num)) indices.add(num);
+                    }
+                });
+            }
+            
+            if (indices.size === 0) { alert("No valid numbers found."); return; }
+            
+            if (!confirm(`Mark ${indices.size} emails as SOLD?`)) return;
+            
+            indices.forEach(idx => {
+                // 1-based index to 0-based
+                const emailIndex = idx - 1;
+                if (emailIndex >= 0 && emailIndex < currentEmails.length) {
+                    const email = currentEmails[emailIndex];
+                    saveData(email, 'status', 'sold');
+                }
+            });
+            
+            // Refresh view
+            const total = (inputLimit.value === '0' || getCombinations(inputEmail.value).length <= parseInt(inputLimit.value)) 
+                          ? currentEmails.length 
+                          : getCombinations(inputEmail.value).length;
+                          
+            renderList(currentEmails, total);
+            batchInput.value = '';
+        }
 
         // Data Management Events
         btnData.addEventListener('click', () => dataModal.classList.add('show'));
@@ -385,7 +484,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 importTextArea.value = e.target.result;
-                processImport(); // Auto process on file select
+                processImport();
             };
             reader.readAsText(file);
         });
@@ -446,24 +545,18 @@
         function saveData(email, field, value) {
             // Initialize with UNUSED as default
             if (!db[email]) {
-                db[email] = { price: '', note: '', status: 'unused', timestamp: Date.now() };
+                db[email] = { price: '', note: '', status: 'unused', timestamp: Date.now(), copied: false };
             }
-            
             db[email][field] = value;
-            
-            // Auto active if price added and currently unused
             if (field === 'price' && value !== '' && db[email].status === 'unused') {
                 db[email].status = 'active';
             }
-            
             if (field === 'status' && value === 'sold') {
                 db[email].timestamp = Date.now();
             }
-
             localStorage.setItem('maildot_db', JSON.stringify(db));
             updateStats();
             
-            // UI Update for status button if price change triggered status change
             if (field === 'price') {
                 const btn = document.querySelector(`button[data-email="${email}"]`);
                 if (btn && db[email].status === 'active') {
@@ -476,13 +569,10 @@
         function getCombinations(email) {
             const [user, domain] = email.split('@');
             if (!user || !domain) return [];
-
             const n = user.length - 1;
             const max = 1 << n;
             const combos = [];
-            
             const safeMax = n > 15 ? 10000 : max; 
-
             for (let i = 0; i < safeMax; i++) {
                 let str = user[0];
                 for (let j = 0; j < n; j++) {
@@ -494,32 +584,49 @@
             return combos;
         }
 
-        function renderList(emails) {
+        function renderList(emails, totalCount) {
             resultsList.innerHTML = '';
             if (emails.length === 0) return;
 
             actionBar.classList.remove('hidden');
-            resultCount.innerText = `${emails.length} Results`;
+            batchBar.classList.remove('hidden'); // Show batch bar
+            
+            if (totalCount && totalCount > emails.length) {
+                resultCount.innerText = `${emails.length} Shown / ${totalCount.toLocaleString()} Total`;
+            } else {
+                resultCount.innerText = `${emails.length.toLocaleString()} Results`;
+            }
 
-            emails.forEach(email => {
-                const saved = db[email] || { price: '', note: '', status: 'unused' };
-                const status = saved.status || 'unused'; // Fallback for old data
+            emails.forEach((email, index) => { // Added index
+                const saved = db[email] || { price: '', note: '', status: 'unused', copied: false };
+                const status = saved.status || 'unused'; 
+                const isCopied = saved.copied === true;
+                const isSold = status === 'sold';
 
                 const div = document.createElement('div');
                 div.className = 'email-item';
                 
                 let statusClass = 'status-unused';
                 let statusText = 'UNUSED';
-                
                 if (status === 'active') { statusClass = 'status-active'; statusText = 'ACTIVE'; }
                 if (status === 'sold') { statusClass = 'status-sold'; statusText = 'SOLD'; }
 
+                let textClass = 'email-text';
+                if (isSold) textClass += ' sold';
+                else if (isCopied) textClass += ' copied';
+
+                let iconButton = '';
+                if (isSold) {
+                    iconButton = `<button class="copy-btn-icon locked" title="Sold (Locked)"><i class="fas fa-times"></i></button>`;
+                } else {
+                    iconButton = `<button class="copy-btn-icon" onclick="copyText(this, '${email}')" title="Copy Email"><i class="far fa-copy"></i></button>`;
+                }
+
                 div.innerHTML = `
                     <div class="email-row">
-                        <span class="email-text" id="txt-${email}">${email}</span>
-                        <button class="copy-btn-icon" onclick="copyText(this, '${email}')" title="Copy Email">
-                            <i class="far fa-copy"></i>
-                        </button>
+                        <span class="row-number">#${index + 1}</span> <!-- Added Number -->
+                        <span class="${textClass}" id="txt-${email}">${email}</span>
+                        ${iconButton}
                     </div>
                     <div class="item-controls">
                         <div class="relative w-1/4">
@@ -569,14 +676,11 @@
 
         window.copyText = function(btn, text) {
             navigator.clipboard.writeText(text).then(() => {
-                // Visual feedback on the button icon
+                saveData(text, 'copied', true);
                 const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-check text-green-500"></i>';
-                
-                // Visual feedback on the text (per previous request)
                 const textEl = document.getElementById(`txt-${text}`);
                 if(textEl) textEl.classList.add('copied');
-
                 setTimeout(() => {
                     btn.innerHTML = originalHTML;
                 }, 1500);
@@ -585,27 +689,50 @@
 
         window.toggleStatus = function(btn, email) {
             const currentText = btn.innerText;
-            let nextStatus = 'active'; // default fallback
-
+            let nextStatus = 'active'; 
             if (currentText === 'UNUSED') nextStatus = 'active';
             else if (currentText === 'ACTIVE') nextStatus = 'sold';
-            else if (currentText === 'SOLD') nextStatus = 'active'; // Cycle back to active from sold
+            else if (currentText === 'SOLD') nextStatus = 'active'; 
 
-            // Confirmation for Sold
             if (nextStatus === 'sold') {
-                if (!confirm(`Mark ${email} as SOLD?`)) return;
+                if (!confirm(`Mark ${email} as SOLD? This will lock the email.`)) return;
             }
 
+            saveData(email, 'status', nextStatus);
+            
             let nextClass = 'status-active';
             let nextLabel = 'ACTIVE';
-
             if (nextStatus === 'unused') { nextClass = 'status-unused'; nextLabel = 'UNUSED'; }
             if (nextStatus === 'sold') { nextClass = 'status-sold'; nextLabel = 'SOLD'; }
-
+            
             btn.innerText = nextLabel;
             btn.className = `status-btn ${nextClass}`;
-            
-            saveData(email, 'status', nextStatus);
+
+            const row = btn.closest('.email-item').querySelector('.email-row');
+            const textEl = row.querySelector('.email-text');
+            const iconContainer = row.querySelector('button');
+
+            if (nextStatus === 'sold') {
+                textEl.classList.add('sold');
+                textEl.classList.remove('copied'); 
+                const newBtn = document.createElement('button');
+                newBtn.className = "copy-btn-icon locked";
+                newBtn.title = "Sold (Locked)";
+                newBtn.innerHTML = '<i class="fas fa-times"></i>';
+                row.replaceChild(newBtn, iconContainer);
+            } else {
+                textEl.classList.remove('sold');
+                const saved = db[email];
+                if (saved && saved.copied) textEl.classList.add('copied');
+                if (iconContainer.classList.contains('locked')) {
+                    const newBtn = document.createElement('button');
+                    newBtn.className = "copy-btn-icon";
+                    newBtn.title = "Copy Email";
+                    newBtn.onclick = function() { copyText(this, email) };
+                    newBtn.innerHTML = '<i class="far fa-copy"></i>';
+                    row.replaceChild(newBtn, iconContainer);
+                }
+            }
         }
 
         window.resetData = function() {
@@ -619,6 +746,7 @@
                 inputEmail.value = "";
                 resultsList.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">Enter an email to generate combinations.</div>';
                 actionBar.classList.add('hidden');
+                batchBar.classList.add('hidden'); // Hide batch bar on reset
                 
                 updateStats();
                 alert("All data and settings have been reset.");
@@ -635,17 +763,13 @@
             });
         });
 
-        // --- Export / Import Helpers ---
+        // ... Export/Import functions same as before ...
         function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
         function b64_to_utf8(str) { return decodeURIComponent(escape(window.atob(str))); }
 
         window.exportBackup = function() {
             try {
-                // Export both DB and Saved Emails
-                const backup = {
-                    db: db,
-                    savedEmails: savedEmails
-                };
+                const backup = { db: db, savedEmails: savedEmails };
                 const dataStr = utf8_to_b64(JSON.stringify(backup));
                 const blob = new Blob([dataStr], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
@@ -668,17 +792,14 @@
                 
                 if (typeof importedData !== 'object') throw new Error();
 
-                // Handle legacy format (just db) or new format (wrapper)
                 if (importedData.db) {
                     db = { ...db, ...importedData.db };
                     if (importedData.savedEmails) {
-                        // Merge unique emails
                         const newSet = new Set([...savedEmails, ...importedData.savedEmails]);
                         savedEmails = Array.from(newSet);
                         localStorage.setItem('maildot_saved_emails', JSON.stringify(savedEmails));
                     }
                 } else {
-                    // Fallback for legacy (if any existed previously)
                     db = { ...db, ...importedData };
                 }
 
