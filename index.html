@@ -61,53 +61,66 @@
             box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.5);
         }
 
-        /* COMPACT MODE STYLES (Wide List View) */
-        #tools-grid.compact {
-            grid-template-columns: 1fr; /* Single column */
+        /* --- VIEW MODES --- */
+
+        /* 1. LIST MODE (Horizontal Wide) */
+        #tools-grid.view-list {
+            grid-template-columns: 1fr;
             max-width: 600px;
             margin: 0 auto;
         }
-
-        #tools-grid.compact .glass-card {
+        #tools-grid.view-list .glass-card {
             flex-direction: row;
             align-items: center;
             padding: 12px 16px;
-            border-radius: 12px;
+            border-radius: 16px;
         }
+        #tools-grid.view-list .tool-bg-icon { display: none; }
+        #tools-grid.view-list .tool-icon-wrapper {
+            width: 40px; height: 40px;
+            margin-bottom: 0; margin-right: 16px;
+            border-radius: 10px; flex-shrink: 0;
+        }
+        #tools-grid.view-list .tool-content { flex: 1; }
+        #tools-grid.view-list .tool-title { font-size: 1rem; margin-bottom: 2px; }
+        #tools-grid.view-list .tool-desc {
+            font-size: 0.75rem; margin: 0;
+            display: -webkit-box; -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        #tools-grid.view-list .tool-arrow { display: none; }
 
-        #tools-grid.compact .tool-bg-icon {
-            display: none; /* Hide giant background icon */
+        /* 2. DENSE MODE (2-Col Grid Compact) */
+        #tools-grid.view-dense {
+            grid-template-columns: repeat(2, 1fr); /* Force 2 cols on mobile */
+            gap: 10px;
         }
-
-        #tools-grid.compact .tool-icon-wrapper {
-            width: 40px;
-            height: 40px;
-            margin-bottom: 0;
-            margin-right: 16px;
-            border-radius: 10px;
-            flex-shrink: 0;
+        #tools-grid.view-dense .glass-card {
+            padding: 12px;
+            border-radius: 16px;
         }
-
-        #tools-grid.compact .tool-content {
-            flex: 1;
+        #tools-grid.view-dense .tool-bg-icon {
+            width: 40px; height: 40px;
+            opacity: 0.05;
+            top: 4px; right: 4px;
         }
-
-        #tools-grid.compact .tool-title {
-            font-size: 1rem;
-            margin-bottom: 2px;
+        #tools-grid.view-dense .tool-icon-wrapper {
+            width: 32px; height: 32px;
+            margin-bottom: 8px;
+            border-radius: 8px;
         }
-
-        #tools-grid.compact .tool-desc {
-            font-size: 0.75rem;
-            margin: 0;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        #tools-grid.view-dense .tool-title {
+            font-size: 0.85rem;
+            margin-bottom: 4px;
         }
-        
-        #tools-grid.compact .tool-arrow {
-            display: none; /* Hide arrow in compact to save space, or make smaller */
+        #tools-grid.view-dense .tool-desc {
+            font-size: 0.65rem;
+            line-height: 1.2;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        #tools-grid.view-dense .glass-card:hover {
+            transform: translateY(-2px);
         }
 
         /* Modal Styles */
@@ -152,7 +165,7 @@
         html.dark .bg-blob-1 { background-color: #1e3a8a; opacity: 0.4; }
         html.dark .bg-blob-2 { background-color: #581c87; opacity: 0.4; }
         
-        /* Button Base Styles for Consistency */
+        /* Button Base Styles */
         .header-btn {
             height: 36px; 
             display: flex;
@@ -219,7 +232,7 @@
     <!-- Header -->
     <header class="w-full p-4 flex justify-end items-center gap-2 z-50">
         <!-- View Toggle -->
-        <button id="btn-view" onclick="toggleView()" class="header-btn w-9 p-0 group" title="Toggle View Mode">
+        <button id="btn-view" onclick="toggleView()" class="header-btn w-9 p-0 group" title="Switch View Mode">
             <i data-lucide="layout-grid" class="w-4 h-4 group-hover:text-brand-600 dark:group-hover:text-brand-400"></i>
         </button>
 
@@ -365,7 +378,14 @@
         const html = document.documentElement;
         const donateModal = document.getElementById('donate-modal');
 
-        // Update Theme Icon
+        // View Modes: Grid (Default) -> List (Wide) -> Dense (Compact Grid)
+        const modes = ['grid', 'list', 'dense'];
+        let currentModeIndex = modes.indexOf(localStorage.getItem('synkph_view_mode') || 'grid');
+        if (currentModeIndex === -1) currentModeIndex = 0;
+
+        // Apply saved mode on load
+        applyViewMode(modes[currentModeIndex]);
+
         function updateThemeIcon() {
             const isDark = html.classList.contains('dark');
             const icon = isDark ? 'sun' : 'moon';
@@ -373,21 +393,34 @@
             lucide.createIcons();
         }
 
-        // Update View Icon
-        function updateViewIcon() {
-            const isCompact = toolsGrid.classList.contains('compact');
-            const icon = isCompact ? 'layout-grid' : 'list';
+        function applyViewMode(mode) {
+            // Remove all possible classes first
+            toolsGrid.classList.remove('view-list', 'view-dense');
+            
+            // Add specific class
+            if (mode !== 'grid') {
+                toolsGrid.classList.add(`view-${mode}`);
+            }
+            
+            // Update Icon based on next available mode (for user feedback)
+            let icon = 'layout-grid'; // Default icon
+            if (mode === 'grid') icon = 'layout-grid'; 
+            if (mode === 'list') icon = 'list'; 
+            if (mode === 'dense') icon = 'grid-2x2';
+            
             btnView.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"></i>`;
             lucide.createIcons();
         }
 
+        function toggleView() {
+            currentModeIndex = (currentModeIndex + 1) % modes.length;
+            const newMode = modes[currentModeIndex];
+            localStorage.setItem('synkph_view_mode', newMode);
+            applyViewMode(newMode);
+        }
+
         // Init
         updateThemeIcon();
-        // Restore view mode preference
-        if (localStorage.getItem('synkph_view_mode') === 'compact') {
-            toolsGrid.classList.add('compact');
-        }
-        updateViewIcon();
 
         // Theme Toggle Logic
         btnTheme.addEventListener('click', () => {
@@ -396,14 +429,6 @@
             localStorage.setItem('shein_pcal_theme', isDark ? 'dark' : 'light');
             updateThemeIcon();
         });
-
-        // View Mode Toggle Logic
-        function toggleView() {
-            toolsGrid.classList.toggle('compact');
-            const isCompact = toolsGrid.classList.contains('compact');
-            localStorage.setItem('synkph_view_mode', isCompact ? 'compact' : 'grid');
-            updateViewIcon();
-        }
 
         // Search Logic
         function filterTools() {
