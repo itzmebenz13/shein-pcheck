@@ -701,21 +701,40 @@
         const TODAY = new Date().getDay();
         const IS_WEEKEND = (TODAY === 0 || TODAY === 6);
         
-        // ADDED NEW VOUCHERS AT THE TOP WITH isNew FLAG
+        // SORTED VOUCHERS: HIGHEST PERCENTAGE FIRST
         const PRESET_VOUCHERS = [
+            // 70%
             { percent: 70, cap: 414, min: 0, isNew: true },
+            
+            // 67%
             { percent: 67, cap: 887, min: 585, isNew: true },
-            { percent: 50, cap: 1182, min: 1176, isNew: true },
+            
+            // 65%
             { percent: 65, cap: 296, min: 0, isNew: true },
+            
+            // 64%
             { percent: 64, cap: 709, min: 585, isNew: true },
             
-            // Existing vouchers
-            { percent: 60, cap: 428, min: 285 }, { percent: 60, cap: 255, min: 120 }, { percent: 60, cap: 170, min: 99 },
-            { percent: 60, cap: 150, min: 249 }, { percent: 60, cap: 100, min: 99 },
+            // 60%
+            { percent: 60, cap: 428, min: 285 }, 
+            { percent: 60, cap: 255, min: 120 }, 
+            { percent: 60, cap: 170, min: 99 },
+            { percent: 60, cap: 150, min: 249 }, 
+            { percent: 60, cap: 100, min: 99 },
+            
+            // 50%
+            { percent: 50, cap: 1182, min: 1176, isNew: true },
             { percent: 50, cap: 325, min: 410 },
-            { percent: 50, cap: 250, min: 350 }, { percent: 50, cap: 200, min: 340 },
-            { percent: 40, cap: 360, min: 499 }, { percent: 40, cap: 360, min: 600 },
-            { percent: 30, cap: 720, min: 1199 }, { percent: 30, cap: 700, min: 1200 }
+            { percent: 50, cap: 250, min: 350 }, 
+            { percent: 50, cap: 200, min: 340 },
+            
+            // 40%
+            { percent: 40, cap: 360, min: 499 }, 
+            { percent: 40, cap: 360, min: 600 },
+            
+            // 30%
+            { percent: 30, cap: 720, min: 1199 }, 
+            { percent: 30, cap: 700, min: 1200 }
         ];
 
         // UI Elements
