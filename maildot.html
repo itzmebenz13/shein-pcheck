@@ -28,9 +28,10 @@
         html.dark-mode .bg-gray-50, html.dark-mode .bg-gray-100 { background-color: #181818 !important; color: #e5e5e5 !important; border-color: #333 !important; }
         html.dark-mode .text-gray-600, html.dark-mode .text-gray-500, html.dark-mode .text-gray-400 { color: #a3a3a3 !important; }
         html.dark-mode .text-black, html.dark-mode .text-gray-800 { color: #ffffff !important; }
-        html.dark-mode input { background-color: transparent; color: white; border-color: #444; }
-        html.dark-mode .border-gray-200 { border-color: #333 !important; }
+        html.dark-mode input, html.dark-mode select { background-color: transparent; color: white; border-color: #444; }
+        html.dark-mode .border-gray-200, html.dark-mode .border-gray-300 { border-color: #333 !important; }
         html.dark-mode .stat-card { background-color: #1e1e1e; border-color: #333; }
+        html.dark-mode textarea { background-color: #262626; color: white; border-color: #444; }
 
         /* Custom Inputs */
         .md-input {
@@ -78,6 +79,20 @@
         .stat-card { background: white; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb; }
         .stat-val { font-size: 18px; font-weight: 900; }
         .stat-lbl { font-size: 10px; text-transform: uppercase; color: #6b7280; font-weight: 600; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal-card {
+            background: white; width: 90%; max-width: 320px; border-radius: 12px;
+            padding: 20px; transform: translateY(20px); transition: transform 0.2s;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-overlay.show .modal-card { transform: translateY(0); }
     </style>
 </head>
 <body class="min-h-screen pb-10">
@@ -90,9 +105,14 @@
                 <a href="index.html" class="text-xl text-gray-800"><i class="fas fa-chevron-left"></i></a>
                 <h1 class="text-lg font-black italic tracking-tighter">Mail<span class="text-blue-600">Dot</span></h1>
             </div>
-            <button class="text-gray-600 hover:text-black transition-colors" id="btn-theme">
-                <i class="fas fa-moon"></i>
-            </button>
+            <div class="flex items-center gap-4">
+                <button class="text-gray-600 hover:text-blue-600 transition-colors" id="btn-data" title="Backup/Restore">
+                    <i class="fas fa-database"></i>
+                </button>
+                <button class="text-gray-600 hover:text-black transition-colors" id="btn-theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
         </header>
 
         <main class="p-4">
@@ -158,6 +178,47 @@
             </div>
 
         </main>
+
+        <!-- DATA MODAL -->
+        <div id="data-modal" class="modal-overlay">
+            <div class="modal-card">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg">Smart Protection</h3>
+                    <button id="btn-close-data" class="text-gray-400 hover:text-black"><i class="fas fa-times"></i></button>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="text-xs text-gray-500 mb-2">
+                        Your data is automatically saved to this browser. Use Export/Import to move data to another device.
+                    </div>
+
+                    <button onclick="exportBackup()" class="w-full bg-black text-white font-bold py-3 rounded text-sm flex justify-center items-center gap-2">
+                        <i class="fas fa-download"></i> Export Data File
+                    </button>
+
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div class="relative flex justify-center text-xs">
+                            <span class="px-2 bg-white text-gray-500">OR</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <input type="file" id="file-import" class="hidden" accept=".txt,.json">
+                        <button onclick="document.getElementById('file-import').click()" class="w-full border border-gray-300 text-gray-700 font-bold py-2 rounded text-xs mb-2 hover:bg-gray-50">
+                            Select File to Import
+                        </button>
+                        <textarea id="import-text" class="w-full border p-2 text-[10px] rounded mb-2 font-mono h-20" placeholder="Paste import code here..."></textarea>
+                        <button onclick="processImport()" class="w-full bg-blue-600 text-white font-bold py-2 rounded text-xs">
+                            Import Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -181,15 +242,77 @@
         const actionBar = document.getElementById('action-bar');
         const resultCount = document.getElementById('result-count');
         const btnCopyAll = document.getElementById('btn-copy-all');
+        
+        // Data Modal
+        const btnData = document.getElementById('btn-data');
+        const dataModal = document.getElementById('data-modal');
+        const btnCloseData = document.getElementById('btn-close-data');
+        const fileImport = document.getElementById('file-import');
+        const importTextArea = document.getElementById('import-text');
 
-        // Database for Tracking
+        // Database & Session
         let db = JSON.parse(localStorage.getItem('maildot_db') || '{}');
+        let session = JSON.parse(localStorage.getItem('maildot_session') || '{}');
 
         // Stats Elements
         const elStatToday = document.getElementById('stat-today');
         const elStatAccounts = document.getElementById('stat-accounts');
         const elStatWeek = document.getElementById('stat-week');
         const elStatTotal = document.getElementById('stat-total');
+
+        // --- Initialization ---
+        // Restore Session
+        if (session.email) {
+            inputEmail.value = session.email;
+            inputLimit.value = session.limit || "50";
+            // Auto-generate if session exists (Smart Protection)
+            setTimeout(() => btnGenerate.click(), 100);
+        }
+        updateStats();
+
+        // --- Event Listeners ---
+        inputEmail.addEventListener('input', saveSession);
+        inputLimit.addEventListener('change', saveSession);
+
+        btnGenerate.addEventListener('click', () => {
+            const email = inputEmail.value.trim();
+            if (!email.includes('@')) { alert('Invalid Email'); return; }
+
+            saveSession(); // Ensure session saved
+            const limitVal = parseInt(inputLimit.value);
+            let combos = getCombinations(email);
+
+            if (limitVal > 0 && combos.length > limitVal) {
+                combos = combos.slice(0, limitVal);
+            }
+
+            renderList(combos);
+        });
+
+        // Data Management Events
+        btnData.addEventListener('click', () => dataModal.classList.add('show'));
+        btnCloseData.addEventListener('click', () => dataModal.classList.remove('show'));
+        
+        fileImport.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                importTextArea.value = e.target.result;
+                processImport(); // Auto process on file select
+            };
+            reader.readAsText(file);
+        });
+
+        // --- Functions ---
+
+        function saveSession() {
+            const s = {
+                email: inputEmail.value,
+                limit: inputLimit.value
+            };
+            localStorage.setItem('maildot_session', JSON.stringify(s));
+        }
 
         function updateStats() {
             const now = new Date();
@@ -206,7 +329,6 @@
                     const ts = item.timestamp;
                     if (ts >= todayStart) today += price;
                     if (ts >= weekStart) week += price;
-                    // Note: Month calculation logic simplified for this context
                     if (ts >= monthStart) month += price;
                     total += price;
                 }
@@ -225,14 +347,10 @@
             
             db[email][field] = value;
             
-            // Auto set active if price added (per requirement, though default is active)
             if (field === 'price' && value !== '' && db[email].status === 'active') {
-                // Logic: Requirement said "it will only be active automatically when they add a price"
-                // Assuming this means we track it once user interacts.
+                // Auto active logic preserved
             }
             
-            // Update timestamp if sold to track earnings correctly based on WHEN it was sold?
-            // For simplicity, we keep original creation timestamp or update on 'sold' change. 
             if (field === 'status' && value === 'sold') {
                 db[email].timestamp = Date.now();
             }
@@ -249,7 +367,6 @@
             const max = 1 << n;
             const combos = [];
             
-            // Limit "All" to preventing browser crash if N is huge
             const safeMax = n > 15 ? 10000 : max; 
 
             for (let i = 0; i < safeMax; i++) {
@@ -262,20 +379,6 @@
             }
             return combos;
         }
-
-        btnGenerate.addEventListener('click', () => {
-            const email = inputEmail.value.trim();
-            if (!email.includes('@')) { alert('Invalid Email'); return; }
-
-            const limitVal = parseInt(inputLimit.value);
-            let combos = getCombinations(email);
-
-            if (limitVal > 0 && combos.length > limitVal) {
-                combos = combos.slice(0, limitVal);
-            }
-
-            renderList(combos);
-        });
 
         function renderList(emails) {
             resultsList.innerHTML = '';
@@ -313,8 +416,6 @@
         window.copyText = function(el, text) {
             navigator.clipboard.writeText(text).then(() => {
                 el.classList.add('copied');
-                // Remove class after animation usually, but requirement says "change color... so they know they clicked"
-                // We keep it green.
             });
         }
 
@@ -333,13 +434,55 @@
             navigator.clipboard.writeText(emails).then(() => {
                 btnCopyAll.innerHTML = '<i class="fas fa-check"></i> Copied';
                 setTimeout(() => btnCopyAll.innerHTML = '<i class="far fa-copy mr-1"></i> Copy All', 2000);
-                // Also visually mark all as copied
                 document.querySelectorAll('.email-text').forEach(el => el.classList.add('copied'));
             });
         });
 
-        // Init
-        updateStats();
+        // --- Export / Import Helpers ---
+        // UTF-8 Safe Base64
+        function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
+        function b64_to_utf8(str) { return decodeURIComponent(escape(window.atob(str))); }
+
+        window.exportBackup = function() {
+            try {
+                const dataStr = utf8_to_b64(JSON.stringify(db));
+                const blob = new Blob([dataStr], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const date = new Date().toISOString().slice(0,10);
+                a.download = `maildot_backup_${date}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch(e) { alert("Export failed: " + e.message); }
+        }
+
+        window.processImport = function() {
+            const code = importTextArea.value.trim();
+            if (!code) { alert("Please paste code or select a file."); return; }
+            try {
+                const jsonStr = b64_to_utf8(code);
+                const importedData = JSON.parse(jsonStr);
+                
+                if (typeof importedData !== 'object') throw new Error();
+
+                // Merge: Overwrite local with imported if match, keep local if not in import
+                db = { ...db, ...importedData };
+                localStorage.setItem('maildot_db', JSON.stringify(db));
+                updateStats();
+                
+                // Refresh list if current email matches any imported data
+                if (inputEmail.value) btnGenerate.click();
+
+                alert("Data imported successfully!");
+                dataModal.classList.remove('show');
+                importTextArea.value = "";
+                fileImport.value = "";
+            } catch (e) {
+                alert("Invalid Import Code or File Format.");
+            }
+        }
 
     </script>
 </body>
