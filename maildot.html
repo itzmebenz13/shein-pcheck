@@ -52,41 +52,75 @@
         html { scrollbar-width: none; }
         body { -ms-overflow-style: none; }
 
-        /* Email Item Standard */
-        .email-item {
-            display: flex; flex-direction: column; gap: 8px;
-            padding: 12px; background: white; border-radius: 8px;
-            border: 1px solid #e5e7eb; margin-bottom: 8px;
-            transition: all 0.2s;
+        /* SWIPE CONTAINER WRAPPER */
+        .swipe-outer {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background-color: #ef4444; /* Red background for delete */
         }
         
-        /* Compact Mode Overrides */
-        .results-list.compact .email-item {
-            padding: 6px 8px;
-            gap: 4px;
+        .delete-action {
+            position: absolute;
+            top: 0; bottom: 0; right: 0;
+            width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 0;
+            cursor: pointer;
+        }
+
+        /* Email Item Standard */
+        .email-item {
+            position: relative;
+            z-index: 10;
+            display: flex; flex-direction: column; gap: 8px;
+            padding: 12px; background: white; border-radius: 8px;
+            border: 1px solid #e5e7eb; 
+            /* No margin bottom here, handled by wrapper */
+            transition: transform 0.1s linear; 
+            touch-action: pan-y; /* Allow vertical scroll, handle horizontal in JS */
+        }
+        
+        /* Dark Mode Fix for Email Item Background */
+        html.dark-mode .email-item {
+            background-color: #1e1e1e;
+            border-color: #333;
+        }
+
+        /* COMPACT MODE OVERRIDES (Fixed Selector) */
+        #results-list.compact .swipe-outer {
             margin-bottom: 4px;
         }
-        .results-list.compact .email-row {
+        
+        #results-list.compact .email-item {
+            padding: 6px 8px;
+            gap: 4px;
+        }
+        #results-list.compact .email-row {
             margin-bottom: 2px;
         }
-        .results-list.compact .email-text {
+        #results-list.compact .email-text {
             font-size: 11px;
             padding: 0;
         }
-        .results-list.compact .row-number {
+        #results-list.compact .row-number {
             font-size: 9px;
             margin-right: 4px;
             min-width: 18px;
         }
-        .results-list.compact .item-controls {
+        #results-list.compact .item-controls {
             gap: 4px;
         }
-        .results-list.compact .tiny-input {
+        #results-list.compact .tiny-input {
             padding: 2px 4px;
             font-size: 10px;
             height: 24px;
         }
-        .results-list.compact .status-btn {
+        #results-list.compact .status-btn {
             font-size: 9px;
             padding: 2px 0;
             width: 45px;
@@ -95,23 +129,17 @@
             align-items: center;
             justify-content: center;
         }
-        .results-list.compact .copy-btn-icon {
+        #results-list.compact .copy-btn-icon {
             padding: 2px 4px;
             font-size: 12px;
         }
-        .results-list.compact .relative span.absolute {
+        #results-list.compact .relative span.absolute {
             font-size: 9px;
             top: 5px;
             left: 4px;
         }
-        .results-list.compact .relative input.pl-4 {
+        #results-list.compact .relative input.pl-4 {
             padding-left: 12px;
-        }
-        
-        /* Dark Mode Fix for Email Item Background */
-        html.dark-mode .email-item {
-            background-color: #1e1e1e;
-            border-color: #333;
         }
 
         .email-row {
@@ -373,7 +401,6 @@
                 </div>
                 
                 <div class="space-y-4">
-                    
                     <!-- Preference -->
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase">Default Price (Auto-Fill)</label>
@@ -789,8 +816,51 @@
                 const isCopied = saved.copied === true;
                 const isSold = status === 'sold';
 
-                const div = document.createElement('div');
-                div.className = 'email-item';
+                const wrapper = document.createElement('div');
+                wrapper.className = 'swipe-outer';
+                
+                // Content for Swipe Delete Action
+                const deleteAction = document.createElement('div');
+                deleteAction.className = 'delete-action';
+                deleteAction.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                deleteAction.onclick = () => deleteItem(email);
+                
+                const item = document.createElement('div');
+                item.className = 'email-item';
+                
+                // Touch Events for Swipe
+                let touchStartX = 0;
+                let touchEndX = 0;
+                
+                item.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, {passive: true});
+                
+                item.addEventListener('touchmove', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    const diff = touchEndX - touchStartX;
+                    // Only allow sliding left (negative diff) and limit drag
+                    if(diff < 0 && diff > -100) {
+                        item.style.transform = `translateX(${diff}px)`;
+                    }
+                }, {passive: true});
+                
+                item.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    if(touchStartX - touchEndX > 50) { // Swiped left enough
+                        item.style.transform = 'translateX(-80px)'; // Snap open
+                    } else {
+                        item.style.transform = 'translateX(0)'; // Snap back
+                    }
+                });
+                
+                // Helper to close swipe if clicked elsewhere
+                item.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+                         item.style.transform = 'translateX(0)';
+                    }
+                });
+
                 
                 let statusClass = 'status-unused';
                 let statusText = 'UNUSED';
@@ -808,7 +878,7 @@
                     iconButton = `<button class="copy-btn-icon" onclick="copyText(this, '${email}')" title="Copy Email"><i class="far fa-copy"></i></button>`;
                 }
 
-                div.innerHTML = `
+                item.innerHTML = `
                     <div class="email-row">
                         <span class="row-number">#${index + 1}</span>
                         <span class="${textClass}" id="txt-${email}">${email}</span>
@@ -820,7 +890,7 @@
                             <input type="number" class="tiny-input w-full pl-4" placeholder="Price" 
                                 value="${saved.price}" onchange="saveData('${email}', 'price', this.value)">
                         </div>
-                        <input type="text" class="tiny-input flex-1" maxlength="16" placeholder="Note (16 chars)" 
+                        <input type="text" class="tiny-input flex-1" maxlength="16" placeholder="Note" 
                             value="${saved.note}" onchange="saveData('${email}', 'note', this.value)">
                         <button class="status-btn ${statusClass}" data-email="${email}"
                             onclick="toggleStatus(this, '${email}')">
@@ -828,8 +898,23 @@
                         </button>
                     </div>
                 `;
-                resultsList.appendChild(div);
+                
+                wrapper.appendChild(deleteAction);
+                wrapper.appendChild(item);
+                resultsList.appendChild(wrapper);
             });
+        }
+        
+        window.deleteItem = function(email) {
+            if(!confirm(`Permanently delete ${email} data?`)) return;
+            delete db[email];
+            localStorage.setItem('maildot_db', JSON.stringify(db));
+            updateStats();
+            // Re-render
+            const total = (inputLimit.value === '0' || getCombinations(inputEmail.value).length <= parseInt(inputLimit.value)) 
+                          ? currentEmails.length 
+                          : getCombinations(inputEmail.value).length;
+            renderList(currentEmails, total);
         }
 
         function renderSavedEmails() {
