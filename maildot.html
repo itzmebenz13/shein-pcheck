@@ -55,13 +55,24 @@
             border-color: #333;
         }
 
+        .email-row {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
         .email-text {
             font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 500;
-            cursor: pointer; word-break: break-all; color: #333;
-            padding: 4px 0; display: block;
+            word-break: break-all; color: #333;
+            padding: 4px 0; display: block; flex: 1;
         }
         html.dark-mode .email-text { color: #e5e5e5; }
         .email-text.copied { color: #16a34a !important; } /* Green when copied */
+
+        .copy-btn-icon {
+            padding: 4px 8px; color: #9ca3af; font-size: 14px;
+            cursor: pointer; transition: color 0.2s;
+        }
+        .copy-btn-icon:hover { color: #2563eb; }
+        html.dark-mode .copy-btn-icon:hover { color: #60a5fa; }
 
         /* Controls Row */
         .item-controls { display: flex; gap: 8px; align-items: center; }
@@ -72,12 +83,15 @@
         
         /* Status Toggle */
         .status-btn {
-            font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 4px;
+            font-size: 10px; font-weight: 800; padding: 4px 0; border-radius: 4px;
             text-transform: uppercase; cursor: pointer; border: 1px solid;
-            width: 60px; text-align: center;
+            width: 60px; text-align: center; flex-shrink: 0;
         }
+        .status-unused { background-color: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
         .status-active { background-color: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
         .status-sold { background-color: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        
+        html.dark-mode .status-unused { background-color: #374151; color: #9ca3af; border-color: #4b5563; }
         html.dark-mode .status-active { background-color: #172554; color: #93c5fd; border-color: #1e3a8a; }
         html.dark-mode .status-sold { background-color: #052e16; color: #86efac; border-color: #14532d; }
 
@@ -218,8 +232,14 @@
                             Select File to Import
                         </button>
                         <textarea id="import-text" class="w-full border p-2 text-[10px] rounded mb-2 font-mono h-20" placeholder="Paste import code here..."></textarea>
-                        <button onclick="processImport()" class="w-full bg-blue-600 text-white font-bold py-2 rounded text-xs">
+                        <button onclick="processImport()" class="w-full bg-blue-600 text-white font-bold py-2 rounded text-xs mb-4">
                             Import Data
+                        </button>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-3">
+                        <button onclick="resetData()" class="w-full text-red-500 font-bold py-2 rounded text-xs border border-red-200 hover:bg-red-50">
+                            <i class="fas fa-trash-alt mr-1"></i> Reset All Data
                         </button>
                     </div>
                 </div>
@@ -348,14 +368,16 @@
         }
 
         function saveData(email, field, value) {
+            // Initialize with UNUSED as default
             if (!db[email]) {
-                db[email] = { price: '', note: '', status: 'active', timestamp: Date.now() };
+                db[email] = { price: '', note: '', status: 'unused', timestamp: Date.now() };
             }
             
             db[email][field] = value;
             
-            if (field === 'price' && value !== '' && db[email].status === 'active') {
-                // Auto active logic preserved
+            // Auto active if price added and currently unused
+            if (field === 'price' && value !== '' && db[email].status === 'unused') {
+                db[email].status = 'active';
             }
             
             if (field === 'status' && value === 'sold') {
@@ -364,6 +386,18 @@
 
             localStorage.setItem('maildot_db', JSON.stringify(db));
             updateStats();
+            
+            // Re-render specifically this item button logic? 
+            // Simpler to just re-render list or let toggleStatus handle UI update
+            // But if we auto-changed status due to price, we need to update that button
+            if (field === 'price') {
+                // Find button and update if changed to active
+                const btn = document.querySelector(`button[data-email="${email}"]`);
+                if (btn && db[email].status === 'active') {
+                    btn.innerText = 'ACTIVE';
+                    btn.className = 'status-btn status-active';
+                }
+            }
         }
 
         function getCombinations(email) {
@@ -395,13 +429,25 @@
             resultCount.innerText = `${emails.length} Results`;
 
             emails.forEach(email => {
-                const saved = db[email] || { price: '', note: '', status: 'active' };
-                const isSold = saved.status === 'sold';
+                const saved = db[email] || { price: '', note: '', status: 'unused' };
+                const status = saved.status || 'unused'; // Fallback for old data
 
                 const div = document.createElement('div');
                 div.className = 'email-item';
+                
+                let statusClass = 'status-unused';
+                let statusText = 'UNUSED';
+                
+                if (status === 'active') { statusClass = 'status-active'; statusText = 'ACTIVE'; }
+                if (status === 'sold') { statusClass = 'status-sold'; statusText = 'SOLD'; }
+
                 div.innerHTML = `
-                    <span class="email-text" onclick="copyText(this, '${email}')">${email}</span>
+                    <div class="email-row">
+                        <span class="email-text" id="txt-${email}">${email}</span>
+                        <button class="copy-btn-icon" onclick="copyText(this, '${email}')" title="Copy Email">
+                            <i class="far fa-copy"></i>
+                        </button>
+                    </div>
                     <div class="item-controls">
                         <div class="relative w-1/4">
                             <span class="absolute left-1.5 top-1.5 text-xs text-gray-400">₱</span>
@@ -410,9 +456,9 @@
                         </div>
                         <input type="text" class="tiny-input flex-1" maxlength="16" placeholder="Note (16 chars)" 
                             value="${saved.note}" onchange="saveData('${email}', 'note', this.value)">
-                        <button class="status-btn ${isSold ? 'status-sold' : 'status-active'}" 
+                        <button class="status-btn ${statusClass}" data-email="${email}"
                             onclick="toggleStatus(this, '${email}')">
-                            ${isSold ? 'SOLD' : 'ACTIVE'}
+                            ${statusText}
                         </button>
                     </div>
                 `;
@@ -420,20 +466,57 @@
             });
         }
 
-        window.copyText = function(el, text) {
+        window.copyText = function(btn, text) {
             navigator.clipboard.writeText(text).then(() => {
-                el.classList.add('copied');
+                // Visual feedback on the button icon
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                
+                // Visual feedback on the text (per previous request)
+                const textEl = document.getElementById(`txt-${text}`);
+                if(textEl) textEl.classList.add('copied');
+
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 1500);
             });
         }
 
         window.toggleStatus = function(btn, email) {
-            const isSold = btn.innerText === 'SOLD';
-            const newStatus = isSold ? 'active' : 'sold';
+            const currentText = btn.innerText;
+            let nextStatus = 'active'; // default fallback
+
+            if (currentText === 'UNUSED') nextStatus = 'active';
+            else if (currentText === 'ACTIVE') nextStatus = 'sold';
+            else if (currentText === 'SOLD') nextStatus = 'active'; // Cycle back to active from sold
+
+            // Confirmation for Sold
+            if (nextStatus === 'sold') {
+                if (!confirm(`Mark ${email} as SOLD?`)) return;
+            }
+
+            let nextClass = 'status-active';
+            let nextLabel = 'ACTIVE';
+
+            if (nextStatus === 'unused') { nextClass = 'status-unused'; nextLabel = 'UNUSED'; }
+            if (nextStatus === 'sold') { nextClass = 'status-sold'; nextLabel = 'SOLD'; }
+
+            btn.innerText = nextLabel;
+            btn.className = `status-btn ${nextClass}`;
             
-            btn.innerText = newStatus === 'sold' ? 'SOLD' : 'ACTIVE';
-            btn.className = `status-btn ${newStatus === 'sold' ? 'status-sold' : 'status-active'}`;
-            
-            saveData(email, 'status', newStatus);
+            saveData(email, 'status', nextStatus);
+        }
+
+        window.resetData = function() {
+            if (confirm("WARNING: Are you sure you want to delete ALL saved data (earnings, notes, statuses)? This action cannot be undone.")) {
+                localStorage.removeItem('maildot_db');
+                db = {};
+                updateStats();
+                // Refresh current view
+                if (inputEmail.value) btnGenerate.click();
+                alert("All data has been reset.");
+                dataModal.classList.remove('show');
+            }
         }
 
         btnCopyAll.addEventListener('click', () => {
@@ -446,7 +529,6 @@
         });
 
         // --- Export / Import Helpers ---
-        // UTF-8 Safe Base64
         function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
         function b64_to_utf8(str) { return decodeURIComponent(escape(window.atob(str))); }
 
@@ -474,12 +556,10 @@
                 
                 if (typeof importedData !== 'object') throw new Error();
 
-                // Merge: Overwrite local with imported if match, keep local if not in import
                 db = { ...db, ...importedData };
                 localStorage.setItem('maildot_db', JSON.stringify(db));
                 updateStats();
                 
-                // Refresh list if current email matches any imported data
                 if (inputEmail.value) btnGenerate.click();
 
                 alert("Data imported successfully!");
