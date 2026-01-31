@@ -29,9 +29,13 @@
         html.dark-mode .text-gray-600, html.dark-mode .text-gray-500, html.dark-mode .text-gray-400 { color: #a3a3a3 !important; }
         html.dark-mode .text-black, html.dark-mode .text-gray-800 { color: #ffffff !important; }
         html.dark-mode input, html.dark-mode select { background-color: transparent; color: white; border-color: #444; }
-        html.dark-mode .border-gray-200, html.dark-mode .border-gray-300 { border-color: #333 !important; }
+        html.dark-mode .border-gray-200, html.dark-mode .border-gray-300, html.dark-mode .border-gray-100 { border-color: #333 !important; }
         html.dark-mode .stat-card { background-color: #1e1e1e; border-color: #333; }
         html.dark-mode textarea { background-color: #262626; color: white; border-color: #444; }
+        
+        /* Dark Mode Red Button Fixes */
+        html.dark-mode .border-red-200 { border-color: #7f1d1d !important; }
+        html.dark-mode .hover\:bg-red-50:hover { background-color: #450a0a !important; }
 
         /* Custom Inputs */
         .md-input {
@@ -97,7 +101,7 @@
 
         /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
-        .stat-card { background: white; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .stat-card { background: white; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb; position: relative; }
         .stat-val { font-size: 18px; font-weight: 900; }
         .stat-lbl { font-size: 10px; text-transform: uppercase; color: #6b7280; font-weight: 600; }
 
@@ -114,6 +118,13 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .modal-overlay.show .modal-card { transform: translateY(0); }
+        
+        /* Dark Mode Modal Fix */
+        html.dark-mode .modal-card {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border: 1px solid #333;
+        }
 
         /* Saved Email Item */
         .saved-email-row {
@@ -162,7 +173,13 @@
                     <div class="stat-val" id="stat-week">₱0.00</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-lbl">All Time</div>
+                    <div class="flex justify-between items-start">
+                        <div class="stat-lbl">All Time</div>
+                        <!-- VISIBLE RESET BUTTON -->
+                        <button onclick="resetData()" class="text-gray-300 hover:text-red-500 transition-colors px-1 -mt-1 -mr-1" title="Reset Data">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    </div>
                     <div class="stat-val" id="stat-total">₱0.00</div>
                 </div>
             </div>
