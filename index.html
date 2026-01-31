@@ -10,6 +10,13 @@
     <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
+    <!-- Theme Init Script (Prevents Light Flash) -->
+    <script>
+        if (localStorage.getItem('shein_pcal_theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU0hFSU4gUENoZWNrIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInRoZW1lX2NvbG9yIjoiIzAwMDAwMCIsImljb25zIjpbeyJzcmMiOiJodHRwczovL2ltZy5pY29uczguY29tL2ZsYXNneS85Ni8wMDAwMDAvc2hvcHBpbmctYmFnLTIucG5nIiwic2l6ZXMiOiI5Nng5NiIsInR5cGUiOiJpbWFnZS9wbmcifV19">
     <meta name="theme-color" content="#ffffff">
@@ -296,141 +303,141 @@
         .menu-item i { width: 24px; text-align: center; margin-right: 12px; }
 
         /* --- DARK MODE STYLES --- */
-        body.dark-mode {
+        html.dark-mode body {
             background-color: #121212;
             color: #ffffff;
         }
         
         /* Header */
-        body.dark-mode header,
-        body.dark-mode .shein-input-group,
-        body.dark-mode #sidebar,
-        body.dark-mode .modal-card,
-        body.dark-mode #qr-container,
-        body.dark-mode #acl-main .bg-white {
+        html.dark-mode header,
+        html.dark-mode .shein-input-group,
+        html.dark-mode #sidebar,
+        html.dark-mode .modal-card,
+        html.dark-mode #qr-container,
+        html.dark-mode #acl-main .bg-white {
             background-color: #1e1e1e !important;
             color: #ffffff !important;
             border-color: #333;
         }
         
-        body.dark-mode .max-w-md {
+        html.dark-mode .max-w-md {
             background-color: #121212 !important;
         }
 
-        body.dark-mode .bg-gray-100,
-        body.dark-mode .bg-gray-50 {
+        html.dark-mode .bg-gray-100,
+        html.dark-mode .bg-gray-50 {
             background-color: #181818 !important;
             color: #e5e5e5 !important;
             border-color: #333;
         }
 
         /* Text Overrides */
-        body.dark-mode .text-gray-800,
-        body.dark-mode .text-black,
-        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
-        body.dark-mode .shein-input {
+        html.dark-mode .text-gray-800,
+        html.dark-mode .text-black,
+        html.dark-mode h1, html.dark-mode h2, html.dark-mode h3,
+        html.dark-mode .shein-input {
             color: #ffffff !important;
         }
 
         /* Fix for Breakdown/Price Details Section */
-        body.dark-mode .summary-row,
-        body.dark-mode .summary-row span,
-        body.dark-mode #display-subtotal {
+        html.dark-mode .summary-row,
+        html.dark-mode .summary-row span,
+        html.dark-mode #display-subtotal {
             color: #ffffff !important;
         }
 
-        body.dark-mode .text-gray-600,
-        body.dark-mode .text-gray-500,
-        body.dark-mode .shein-label,
-        body.dark-mode .menu-item {
+        html.dark-mode .text-gray-600,
+        html.dark-mode .text-gray-500,
+        html.dark-mode .shein-label,
+        html.dark-mode .menu-item {
             color: #a3a3a3 !important;
         }
 
         /* Inputs */
-        body.dark-mode .shein-input {
+        html.dark-mode .shein-input {
             border-bottom-color: #444;
         }
-        body.dark-mode .shein-input:focus {
+        html.dark-mode .shein-input:focus {
             border-bottom-color: #ffffff;
         }
 
         /* Sidebar */
-        body.dark-mode #sidebar {
+        html.dark-mode #sidebar {
             background-color: #1e1e1e;
             box-shadow: 2px 0 10px rgba(0,0,0,0.5);
         }
-        body.dark-mode .menu-item:hover {
+        html.dark-mode .menu-item:hover {
             background-color: #2d2d2d;
         }
-        body.dark-mode .border-gray-100 {
+        html.dark-mode .border-gray-100 {
             border-color: #333 !important;
         }
 
         /* Vouchers */
-        body.dark-mode .voucher-ticket {
+        html.dark-mode .voucher-ticket {
             background-color: #262626;
             border-color: #404040;
         }
-        body.dark-mode .voucher-ticket.active {
+        html.dark-mode .voucher-ticket.active {
             background-color: #3f1818; /* Dark red tint */
             border-color: #ef4444;
         }
-        body.dark-mode .voucher-ticket.disabled {
+        html.dark-mode .voucher-ticket.disabled {
             background-color: #1a1a1a;
             border-color: #333;
         }
-        body.dark-mode .voucher-title {
+        html.dark-mode .voucher-title {
             color: #fff;
         }
-        body.dark-mode .voucher-cutout-top,
-        body.dark-mode .voucher-cutout-bottom {
+        html.dark-mode .voucher-cutout-top,
+        html.dark-mode .voucher-cutout-bottom {
             background-color: #1e1e1e; /* Match container bg */
         }
         
         /* Receipt */
-        body.dark-mode #receipt-content {
+        html.dark-mode #receipt-content {
             background-color: #262626;
             border-color: #444;
             color: #fff;
         }
-        body.dark-mode .receipt-line {
+        html.dark-mode .receipt-line {
             color: #e5e5e5;
         }
 
         /* Buttons & Badges */
-        body.dark-mode #btn-theme i {
+        html.dark-mode #btn-theme i {
             color: #fbbf24; /* Amber sun for dark mode */
         }
-        body.dark-mode #btn-checkout {
+        html.dark-mode #btn-checkout {
             background-color: #ffffff;
             color: #000000;
         }
-        body.dark-mode #btn-generate-receipt {
+        html.dark-mode #btn-generate-receipt {
             background-color: transparent;
             color: #ffffff;
             border-color: #ffffff;
         }
-        body.dark-mode #btn-generate-receipt:hover {
+        html.dark-mode #btn-generate-receipt:hover {
             background-color: #2d2d2d;
         }
         
         /* Footer */
-        body.dark-mode .fixed.bottom-0 {
+        html.dark-mode .fixed.bottom-0 {
             background-color: #1e1e1e;
         }
         
         /* Status Bar */
-        body.dark-mode .status-weekday {
+        html.dark-mode .status-weekday {
             background-color: #333;
             color: #ccc;
         }
-        body.dark-mode .status-weekend {
+        html.dark-mode .status-weekend {
             background-color: #064e3b;
             color: #a7f3d0;
         }
 
         /* ACL */
-        body.dark-mode #acl-link-input {
+        html.dark-mode #acl-link-input {
             background-color: #2d2d2d;
             border-color: #444;
             color: white;
@@ -981,7 +988,7 @@
         
         // Theme Init
         if (localStorage.getItem('shein_pcal_theme') === 'dark') {
-            document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark-mode');
             btnTheme.innerHTML = '<i class="fas fa-sun"></i>';
         }
 
@@ -1024,8 +1031,8 @@
 
         // --- Theme Toggle ---
         btnTheme.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.documentElement.classList.contains('dark-mode');
             localStorage.setItem('shein_pcal_theme', isDark ? 'dark' : 'light');
             btnTheme.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
         });
