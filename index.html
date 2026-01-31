@@ -45,8 +45,8 @@
         }
 
         .glass-card:hover {
-            transform: translateY(-3px); /* Reduced float for compact feel */
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
             background: rgba(255, 255, 255, 0.95);
         }
 
@@ -58,7 +58,56 @@
         
         html.dark .glass-card:hover {
             background: rgba(30, 41, 59, 0.9);
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        /* COMPACT MODE STYLES (Wide List View) */
+        #tools-grid.compact {
+            grid-template-columns: 1fr; /* Single column */
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        #tools-grid.compact .glass-card {
+            flex-direction: row;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+        }
+
+        #tools-grid.compact .tool-bg-icon {
+            display: none; /* Hide giant background icon */
+        }
+
+        #tools-grid.compact .tool-icon-wrapper {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 0;
+            margin-right: 16px;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        #tools-grid.compact .tool-content {
+            flex: 1;
+        }
+
+        #tools-grid.compact .tool-title {
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
+
+        #tools-grid.compact .tool-desc {
+            font-size: 0.75rem;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        #tools-grid.compact .tool-arrow {
+            display: none; /* Hide arrow in compact to save space, or make smaller */
         }
 
         /* Modal Styles */
@@ -74,7 +123,7 @@
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             width: 90%; max-width: 320px; border-radius: 20px;
-            padding: 20px; transform: translateY(20px); transition: transform 0.2s;
+            padding: 24px; transform: translateY(20px); transition: transform 0.2s;
             box-shadow: 0 20px 50px rgba(0,0,0,0.2);
             border: 1px solid rgba(255,255,255,0.8);
         }
@@ -105,7 +154,7 @@
         
         /* Button Base Styles for Consistency */
         .header-btn {
-            height: 40px; /* Fixed height for consistency */
+            height: 36px; 
             display: flex;
             align-items: center;
             justify-content: center;
@@ -169,82 +218,100 @@
 
     <!-- Header -->
     <header class="w-full p-4 flex justify-end items-center gap-2 z-50">
+        <!-- View Toggle -->
+        <button id="btn-view" onclick="toggleView()" class="header-btn w-9 p-0 group" title="Toggle View Mode">
+            <i data-lucide="layout-grid" class="w-4 h-4 group-hover:text-brand-600 dark:group-hover:text-brand-400"></i>
+        </button>
+
         <!-- Donate Button -->
-        <button onclick="openDonate()" class="header-btn px-4 text-xs font-bold uppercase tracking-wider hover:text-pink-500 dark:hover:text-pink-400 group">
-            <i data-lucide="heart" class="w-5 h-5 group-hover:fill-current mr-2"></i>
+        <button onclick="openDonate()" class="header-btn px-4 text-[10px] font-bold uppercase tracking-wider hover:text-pink-500 dark:hover:text-pink-400 group">
+            <i data-lucide="heart" class="w-4 h-4 group-hover:fill-current mr-2"></i>
             <span class="hidden sm:inline">Support</span>
         </button>
 
         <!-- Theme Toggle -->
-        <button id="btn-theme" class="header-btn w-10 p-0 group">
-            <i data-lucide="moon" class="w-5 h-5 group-hover:text-brand-600 dark:group-hover:text-brand-400"></i>
+        <button id="btn-theme" class="header-btn w-9 p-0 group" title="Toggle Theme">
+            <i data-lucide="moon" class="w-4 h-4 group-hover:text-brand-600 dark:group-hover:text-brand-400"></i>
         </button>
     </header>
 
     <!-- Main Container -->
-    <div class="flex-grow flex flex-col items-center justify-center px-4 w-full pt-4 md:pt-0 md:-mt-16">
+    <div class="flex-grow flex flex-col items-center justify-start pt-10 px-4 w-full">
         
         <!-- Header Section -->
-        <div class="text-center mb-8 relative">
-            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-2 animate-float">
+        <div class="text-center mb-8 relative w-full max-w-md">
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight mb-2 animate-float">
                 Synk<span class="text-gradient">PH</span>
             </h1>
-            <p class="text-slate-500 dark:text-slate-400 font-medium max-w-sm mx-auto text-sm md:text-base">
+            <p class="text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base mb-6">
                 Minimalist utilities for your daily digital needs.
             </p>
+
+            <!-- Search Bar -->
+            <div class="relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
+                <div class="relative flex items-center bg-white dark:bg-slate-800 rounded-full px-4 py-2.5 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="search-input" oninput="filterTools()" placeholder="Search tools..." class="flex-1 bg-transparent border-none outline-none text-sm ml-2 text-slate-700 dark:text-slate-200 placeholder-slate-400">
+                </div>
+            </div>
         </div>
 
-        <!-- Cards Grid (Compact) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-xl">
+        <!-- Cards Grid -->
+        <div id="tools-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl px-2 transition-all duration-300">
             
             <!-- Tool 1: SHEIN PCheck -->
-            <a href="pcheck.html" class="glass-card p-5 rounded-2xl group relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
+            <a href="pcheck.html" class="glass-card p-5 rounded-2xl group relative overflow-hidden tool-item" data-name="shein pcheck calculator">
+                <div class="tool-bg-icon absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
                     <i data-lucide="shopping-bag" class="w-20 h-20 text-black dark:text-white"></i>
                 </div>
                 
-                <div class="relative z-10 flex flex-col h-full">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3 shadow-md group-hover:rotate-12 transition-transform duration-300 overflow-hidden bg-black">
+                <div class="relative z-10 flex flex-col h-full tool-content">
+                    <div class="tool-icon-wrapper w-10 h-10 rounded-xl flex items-center justify-center mb-3 shadow-md group-hover:rotate-12 transition-transform duration-300 overflow-hidden bg-black">
                         <img src="https://pnghdpro.com/wp-content/themes/pnghdpro/download/social-media-and-brands/shein-app-icon.png" class="w-full h-full object-cover">
                     </div>
                     
-                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-                        SHEIN PCheck
-                        <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-brand-600"></i>
-                    </h2>
-                    
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Smart calculator. Auto-detects free shipping, weekends & optimized points.
-                    </p>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="tool-title text-lg font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+                            SHEIN PCheck
+                            <i data-lucide="arrow-right" class="tool-arrow w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-brand-600"></i>
+                        </h2>
+                        
+                        <p class="tool-desc text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Smart calculator. Auto-detects free shipping & discounts.
+                        </p>
+                    </div>
                 </div>
             </a>
 
             <!-- Tool 2: MailDot Gen -->
-            <a href="maildot.html" class="glass-card p-5 rounded-2xl group relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
+            <a href="maildot.html" class="glass-card p-5 rounded-2xl group relative overflow-hidden tool-item" data-name="maildot gen email generator">
+                <div class="tool-bg-icon absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
                     <i data-lucide="at-sign" class="w-20 h-20 text-brand-600"></i>
                 </div>
                 
-                <div class="relative z-10 flex flex-col h-full">
-                    <div class="w-10 h-10 bg-brand-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-md group-hover:rotate-12 transition-transform duration-300 shadow-brand-200 dark:shadow-none">
+                <div class="relative z-10 flex flex-col h-full tool-content">
+                    <div class="tool-icon-wrapper w-10 h-10 bg-brand-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-md group-hover:rotate-12 transition-transform duration-300 shadow-brand-200 dark:shadow-none">
                         <i data-lucide="mail" class="w-5 h-5"></i>
                     </div>
                     
-                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-                        MailDot Gen
-                        <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-brand-600"></i>
-                    </h2>
-                    
-                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Generate email aliases. Includes earnings tracker & auto-save.
-                    </p>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="tool-title text-lg font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+                            MailDot Gen
+                            <i data-lucide="arrow-right" class="tool-arrow w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-brand-600"></i>
+                        </h2>
+                        
+                        <p class="tool-desc text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Generate email aliases. Includes earnings tracker & auto-save.
+                        </p>
+                    </div>
                 </div>
             </a>
 
         </div>
 
         <!-- Footer -->
-        <div class="mt-10 text-center pb-4">
+        <div class="mt-12 text-center pb-6">
             <p class="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest hover:text-brand-600 transition-colors cursor-default">
                 © 2026 SynkPH
             </p>
@@ -264,10 +331,13 @@
             </div>
             
             <div class="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 mb-3 text-left border border-slate-200 dark:border-slate-700">
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Bank</p>
+                <p class="text-xs font-bold text-slate-800 dark:text-white mb-2">MariBank</p>
+
                 <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Account Name</p>
                 <p class="text-xs font-bold text-slate-800 dark:text-white mb-2">Joven Campomanes</p>
                 
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Bank Account</p>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Account Number</p>
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-mono font-bold text-slate-900 dark:text-white tracking-widest">10527398950</p>
                     <button onclick="copyAccount()" id="btn-copy-acc" class="text-brand-600 hover:text-brand-700 dark:text-brand-400 p-1.5 bg-slate-100 dark:bg-slate-700 rounded-md">
@@ -289,27 +359,66 @@
         lucide.createIcons();
 
         const btnTheme = document.getElementById('btn-theme');
+        const btnView = document.getElementById('btn-view');
+        const toolsGrid = document.getElementById('tools-grid');
+        const searchInput = document.getElementById('search-input');
         const html = document.documentElement;
         const donateModal = document.getElementById('donate-modal');
 
-        // Update icon based on state
+        // Update Theme Icon
         function updateThemeIcon() {
             const isDark = html.classList.contains('dark');
             const icon = isDark ? 'sun' : 'moon';
-            btnTheme.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"></i>`;
+            btnTheme.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"></i>`;
             lucide.createIcons();
         }
 
-        // Init Icon
-        updateThemeIcon();
+        // Update View Icon
+        function updateViewIcon() {
+            const isCompact = toolsGrid.classList.contains('compact');
+            const icon = isCompact ? 'layout-grid' : 'list';
+            btnView.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"></i>`;
+            lucide.createIcons();
+        }
 
-        // Toggle Logic
+        // Init
+        updateThemeIcon();
+        // Restore view mode preference
+        if (localStorage.getItem('synkph_view_mode') === 'compact') {
+            toolsGrid.classList.add('compact');
+        }
+        updateViewIcon();
+
+        // Theme Toggle Logic
         btnTheme.addEventListener('click', () => {
             html.classList.toggle('dark');
             const isDark = html.classList.contains('dark');
             localStorage.setItem('shein_pcal_theme', isDark ? 'dark' : 'light');
             updateThemeIcon();
         });
+
+        // View Mode Toggle Logic
+        function toggleView() {
+            toolsGrid.classList.toggle('compact');
+            const isCompact = toolsGrid.classList.contains('compact');
+            localStorage.setItem('synkph_view_mode', isCompact ? 'compact' : 'grid');
+            updateViewIcon();
+        }
+
+        // Search Logic
+        function filterTools() {
+            const query = searchInput.value.toLowerCase();
+            const tools = document.querySelectorAll('.tool-item');
+            
+            tools.forEach(tool => {
+                const name = tool.getAttribute('data-name');
+                if (name.includes(query)) {
+                    tool.style.display = 'flex';
+                } else {
+                    tool.style.display = 'none';
+                }
+            });
+        }
 
         // Donate Modal Logic
         function openDonate() {
