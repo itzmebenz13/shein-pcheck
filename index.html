@@ -10,7 +10,6 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Updated Newsreader weight to 453 as requested, kept other fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,453&family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Initial Theme Color -->
@@ -28,17 +27,16 @@
             metaTheme.setAttribute('content', '#f8fafc');
         }
 
-        const savedView = localStorage.getItem('synkph_view_mode') || 'compact';
+        // Changed default to 'grid' (2 per row) as requested
+        const savedView = localStorage.getItem('synkph_view_mode') || 'grid';
         document.documentElement.setAttribute('data-view', savedView);
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        /* .font-newsreader class for specific usage */
         .font-newsreader {
             font-family: 'Newsreader', serif;
-            /* Ensure the specific weight is used */
             font-weight: 453; 
         }
 
@@ -50,9 +48,13 @@
             -o-transition: none !important;
         }
 
+        /* Utility for pagination logic */
+        .hidden-tool {
+            display: none !important;
+        }
+
         html {
             background-color: #f8fafc;
-            /* Scroll Fix: Removed height: 100% to let background expand with content */
             min-height: 100%;
         }
         
@@ -508,6 +510,52 @@
                     </div>
                 </div>
             </a>
+
+            <!-- Tool 5: Color Picker (Placeholder for expansion) -->
+            <a href="#" class="glass-card p-6 rounded-3xl group relative overflow-hidden tool-item" data-name="color picker tool">
+                <div class="tool-bg-icon absolute -bottom-4 -right-4 p-3 opacity-[0.03] dark:opacity-[0.05] group-hover:opacity-10 transition-all transform group-hover:scale-110 group-hover:rotate-12 duration-500">
+                    <i data-lucide="palette" class="w-32 h-32 text-slate-500"></i>
+                </div>
+                <div class="relative z-10 flex flex-col h-full tool-content">
+                    <div class="tool-icon-wrapper w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300 ring-1 ring-black/5 dark:ring-white/10">
+                        <i data-lucide="palette" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="tool-title text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">Color Picker</h2>
+                        <p class="tool-desc text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-4">Pick and analyze colors easily.</p>
+                        <div class="tool-tags flex flex-wrap gap-2 mt-auto">
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-md bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">Design</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+             <!-- Tool 6: Notes (Placeholder for expansion) -->
+             <a href="#" class="glass-card p-6 rounded-3xl group relative overflow-hidden tool-item" data-name="notes tool">
+                <div class="tool-bg-icon absolute -bottom-4 -right-4 p-3 opacity-[0.03] dark:opacity-[0.05] group-hover:opacity-10 transition-all transform group-hover:scale-110 group-hover:-rotate-12 duration-500">
+                    <i data-lucide="file-text" class="w-32 h-32 text-slate-500"></i>
+                </div>
+                <div class="relative z-10 flex flex-col h-full tool-content">
+                    <div class="tool-icon-wrapper w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300 ring-1 ring-black/5 dark:ring-white/10">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="tool-title text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">Quick Notes</h2>
+                        <p class="tool-desc text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-4">Simple notepad for your ideas.</p>
+                        <div class="tool-tags flex flex-wrap gap-2 mt-auto">
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Productivity</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- See All Button -->
+        <div id="see-all-container" class="w-full flex justify-center mt-8 hidden">
+            <button onclick="showAllTools()" class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 px-8 rounded-full border border-slate-200 dark:border-slate-700 hover:scale-105 transition-transform text-sm shadow-sm hover:shadow-md flex items-center gap-2 group">
+                See All Tools
+                <i data-lucide="chevron-down" class="w-4 h-4 group-hover:translate-y-0.5 transition-transform"></i>
+            </button>
         </div>
 
         <!-- NEW SECTION: Daily Giveaways -->
@@ -717,11 +765,47 @@
                 toolsGrid.classList.add('transition-all', 'duration-300');
             }, 100);
 
+            // Re-check theme on load just in case
             updateThemeIcon();
+            // Apply View
             applyViewMode(modes[currentModeIndex]);
             typeEffect();
             renderBankTabs(); // Init bank tabs
             updateDonationModal(0); // Init modal content
+            
+            // Init Tool Pagination
+            initToolsGrid();
+        }
+
+        // --- TOOL PAGINATION LOGIC ---
+        function initToolsGrid() {
+            const tools = document.querySelectorAll('.tool-item');
+            const seeAllBtn = document.getElementById('see-all-container');
+            const limit = 4; // Initial limit
+
+            if (tools.length > limit) {
+                // Hide tools beyond limit
+                tools.forEach((tool, index) => {
+                    if (index >= limit) {
+                        tool.classList.add('hidden-tool');
+                    } else {
+                         tool.classList.remove('hidden-tool');
+                    }
+                });
+                // Show button
+                if(seeAllBtn) seeAllBtn.classList.remove('hidden');
+            } else {
+                // If few tools, hide button
+                if(seeAllBtn) seeAllBtn.classList.add('hidden');
+            }
+        }
+
+        function showAllTools() {
+            document.querySelectorAll('.hidden-tool').forEach(el => {
+                el.classList.remove('hidden-tool');
+                // Optional: add fade-in class for smooth reveal
+            });
+            document.getElementById('see-all-container').classList.add('hidden');
         }
 
         // --- DONATION LOGIC ---
@@ -876,14 +960,25 @@
         function filterTools() {
             const query = searchInput.value.toLowerCase();
             const tools = document.querySelectorAll('.tool-item');
-            tools.forEach(tool => {
-                const name = tool.getAttribute('data-name');
-                if (name.includes(query)) {
-                    tool.style.display = 'flex';
-                } else {
-                    tool.style.display = 'none';
-                }
-            });
+            const seeAllBtn = document.getElementById('see-all-container');
+
+            if (query.length > 0) {
+                // Search mode: show all matching, hide pagination button
+                tools.forEach(tool => {
+                    tool.classList.remove('hidden-tool'); 
+                    const name = tool.getAttribute('data-name');
+                    if (name.includes(query)) {
+                        tool.style.display = 'flex';
+                    } else {
+                        tool.style.display = 'none';
+                    }
+                });
+                if(seeAllBtn) seeAllBtn.classList.add('hidden');
+            } else {
+                // Reset mode: clear inline styles and re-apply pagination
+                tools.forEach(tool => tool.style.display = '');
+                initToolsGrid(); 
+            }
         }
 
         function openDonate() {
