@@ -261,6 +261,12 @@
         }
         @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
+        /* New Animate Gradient for backgrounds */
+        .animate-gradient-bg {
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease infinite;
+        }
+
         html.dark .text-gradient {
             background-image: linear-gradient(135deg, #60a5fa, #c084fc, #f472b6);
         }
@@ -565,7 +571,7 @@
                 accName: 'Joven Campomanes',
                 accNum: '10527398950',
                 logo: 'https://banking-aka-storage.maribank.com.sg/maribank/sg/app_infra/live/ccf/logo/logo_text.svg',
-                logoClass: 'h-5 dark:brightness-0 dark:invert', // White in dark mode
+                logoClass: 'h-5 dark:brightness-0 dark:invert', 
                 refCode: 'JC811366',
                 refTooltip: 'Deposit ₱1k & keep for 3 days.',
                 link: 'https://seabankph.onelink.me/RMD2/qbs7mr9j',
@@ -595,7 +601,7 @@
                 accName: 'Joven Campomanes',
                 accNum: '09988079228',
                 logo: 'https://cstatic.ownbank.com.ph/pc-web/_next/static/media/logo.0f42d6ae.svg?w=256&q=80',
-                logoClass: 'h-4 ownbank-filter', // Significantly smaller (h-4 vs h-6/h-5)
+                logoClass: 'h-4 ownbank-filter', 
                 refCode: 'DA67BL',
                 refTooltip: 'Get trial bonus vouchers.',
                 link: null,
@@ -682,7 +688,8 @@
             const linkBtn = document.getElementById('modal-link-btn');
             if (bank.link) {
                 linkBtn.href = bank.link;
-                linkBtn.className = `w-full bg-gradient-to-r ${bank.themeColor} text-white font-bold py-3.5 rounded-xl text-xs hover:opacity-90 hover:scale-[1.02] transition-all shadow-lg flex items-center justify-center gap-2 mb-3`;
+                // ADDED ANIMATED CLASS HERE
+                linkBtn.className = `w-full bg-gradient-to-r ${bank.themeColor} animate-gradient-bg text-white font-bold py-3.5 rounded-xl text-xs hover:opacity-90 hover:scale-[1.02] transition-all shadow-lg flex items-center justify-center gap-2 mb-3`;
                 linkBtn.classList.remove('hidden');
                 document.getElementById('modal-link-text').textContent = bank.linkText;
             } else {
