@@ -3,37 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flux PDF Editor</title>
+    <title>Flux Pro | Creative Asset Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    
+    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
                     colors: {
-                        // Figma-inspired Palette
-                        bg: '#1E1E1E',       // Main Canvas
-                        surface: '#2C2C2C',  // Panels/Bars
-                        border: '#444444',   // Borders
-                        primary: '#0C8CE9',  // Selection Blue
-                        danger: '#F24822',   // Figma Red
-                        text: {
-                            main: '#FFFFFF',
-                            muted: '#B3B3B3'
-                        }
-                    },
-                    boxShadow: {
-                        'float': '0 8px 24px rgba(0,0,0,0.4)',
-                        'glow': '0 0 0 2px #0C8CE9',
+                        canvas: '#121212',
+                        panel: '#1E1E1E',
+                        border: '#2A2A2A',
+                        accent: '#0C8CE9',
+                        danger: '#FF4D4D',
+                        success: '#00D1FF'
                     }
                 }
             }
+        }
+    </script>
+
+    <style>
+        body { background: #121212; color: #E0E0E0; overflow: hidden; }
+        
+        .dot-grid {
+            background-image: radial-gradient(#2A2A2A 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* Small, Clean Card Design */
+        .asset-card {
+            width: 160px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .asset-preview {
+            aspect-ratio: 3/4;
+            background: #181818;
+            border: 1px solid #2A2A2A;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .asset-card:hover .asset-preview {
+            border-color: #0C8CE9;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        .asset-card.selected .asset-preview {
+            border-color: #0C8CE9;
+            box-shadow: 0 0 0 2px #0C8CE9;
+        }
+
+        /* Sidebar Slide-in */
+        #inspector {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        #inspector.open { transform: translateX(0); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: #0C8CE9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Spreadsheet Mini-Preview */
+        .mini-table { font-size: 4px; color: #555; width: 100%; border-collapse: collapse; }
+        .mini-table td { border: 0.1px solid #222; padding: 1px; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col font-sans">
+
+    <header class="h-12 border-b border-border bg-panel flex items-center justify-between px-4 z-50">
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-accent rounded flex items-center justify-center">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <span class="font-bold text-sm tracking-tighter">FLUX PRO</span>
+            </div>
+            <nav class="flex gap-4 text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+                <span class="text-white">Workspace</span>
+                <span class="hover:text-white cursor-pointer transition-colors">Assets</span>
+                <span class="hover:text-white cursor-pointer transition-colors">History</span>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="document.getElementById('file-input').click()" class="bg-accent hover:bg-blue-500 text-white px-3 py-1.5 rounded text-[11px] font-bold transition-all active:scale-95">
+                IMPORT FILE
+            </button>
+            <input type="file" id="file-input" class="hidden" multiple>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden relative">
+        
+        <div id="canvas" class="flex-1 relative overflow-auto dot-grid p-12">
+            
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div class="text-border mb-4">
+                    <svg class="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                </div>
+                <p class="text-gray-600 text-xs font-mono">DRAG ASSETS HERE TO BEGIN</p>
+            </div>
+
+            <div id="asset-grid" class="flex flex-wrap gap-8 justify-start items-start">
+                </div>
+        </div>
+
+        <div id="inspector" class="w-[400px] h-full bg-panel border-l border-border flex flex-col fixed right-0 top-0 z-[60] shadow-2xl">
+            <div class="h-12 flex items-center justify-between px-4 border-b border-border">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest" id="ins-type">Asset Preview</span>
+                <button onclick="closeInspector()" class="text-gray-500 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-auto p-4 bg-[#151515]">
+                <div id="viewer-stage" class="w-full flex justify-center items-start">
+                    </div>
+            </div>
+
+            <div class="p-4 border-t border-border bg-panel">
+                <div class="mb-4">
+                    <h3 class="text-sm font-medium mb-1 truncate" id="ins-name">Filename.pdf</h3>
+                    <p class="text-[10px] text-gray-500 font-mono" id="ins-size">0 KB</p>
+                </div>
+                <button id="download-btn" class="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-xs font-medium transition-colors">
+                    Download Original
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <div id="global-loader" class="fixed bottom-6 right-6 flex items-center gap-3 bg-panel border border-border p-3 rounded-lg shadow-float hidden">
+        <div class="spinner"></div>
+        <span class="text-xs font-medium">Processing File...</span>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const state = {
+            assets: [],
+            selectedId: null
+        };
+
+        const grid = document.getElementById('asset-grid');
+        const fileInput = document.getElementById('file-input');
+
+        fileInput.addEventListener('change', (e) => {
+            Array.from(e.target.files).forEach(file => processFile(file));
+        });
+
+        // Drag and Drop
+        document.body.addEventListener('dragover', (e) => e.preventDefault());
+        document.body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            Array.from(e.dataTransfer.files).forEach(file => processFile(file));
+        });
+
+        async function processFile(file) {
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('global-loader').classList.remove('hidden');
+            
+            const id = Math.random().toString(36).substr(2, 9);
+            const ext = file.name.split('.').pop().toLowerCase();
+            const asset = { id, file, ext, name: file.name, size: formatBytes(file.size) };
+            
+            state.assets.push(asset);
+            
+            // Create Card
+            const card = document.createElement('div');
+            card.className = 'asset-card';
+            card.id = `card-${id}`;
+            card.onclick = () => openInspector(id);
+            
+            card.innerHTML = `
+                <div class="asset-preview flex items-center justify-center p-2">
+                    <div id="thumb-${id}" class="w-full h-full flex items-center justify-center overflow-hidden rounded bg-[#111]">
+                        <span class="text-xs font-bold text-white/20 uppercase">${ext}</span>
+                    </div>
+                </div>
+                <div class="mt-2 px-1">
+                    <div class="text-[11px] font-medium truncate text-gray-300">${file.name}</div>
+                    <div class="text-[9px] text-gray-600 font-mono mt-0.5 uppercase">${ext} • ${asset.size}</div>
+                </div>
+            `;
+            
+            grid.appendChild(card);
+            await generateThumbnail(asset, document.getElementById(`thumb-${id}`));
+            document.getElementById('global-loader').classList.add('hidden');
+        }
+
+        async function generateThumbnail(asset, container) {
+            try {
+                if (asset.ext === 'pdf') {
+                    const arrayBuffer = await asset.file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                    const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({ scale: 0.3 });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width; canvas.height = viewport.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    container.innerHTML = '';
+                    canvas.className = "w-full h-full object-cover";
+                    container.appendChild(canvas);
+                } 
+                else if (['jpg', 'png', 'jpeg', 'webp'].includes(asset.ext)) {
+                    container.innerHTML = `<img src="${URL.createObjectURL(asset.file)}" class="w-full h-full object-cover">`;
+                }
+                else if (['csv', 'xlsx'].includes(asset.ext)) {
+                    const data = await asset.file.arrayBuffer();
+                    const wb = XLSX.read(data, {type: 'array'});
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(ws, {header: 1}).slice(0, 10);
+                    let tableHtml = '<table class="mini-table">';
+                    json.forEach(row => {
+                        tableHtml += '<tr>' + row.slice(0, 3).map(c => `<td>${c}</td>`).join('') + '</tr>';
+                    });
+                    tableHtml += '</table>';
+                    container.innerHTML = tableHtml;
+                }
+                else if (asset.ext === 'docx') {
+                    container.innerHTML = `<svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>`;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function openInspector(id) {
+            const asset = state.assets.find(a => a.id === id);
+            state.selectedId = id;
+            
+            document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(`card-${id}`).classList.add('selected');
+
+            document.getElementById('ins-name').textContent = asset.name;
+            document.getElementById('ins-size').textContent = asset.size;
+            document.getElementById('ins-type').textContent = `${asset.ext} Viewer`;
+            
+            const stage = document.getElementById('viewer-stage');
+            stage.innerHTML = '<div class="spinner"></div>';
+            document.getElementById('inspector').classList.add('open');
+
+            // Render detailed view
+            setTimeout(async () => {
+                if (asset.ext === 'pdf') {
+                    const arrayBuffer = await asset.file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                    stage.innerHTML = '<div id="pdf-scroller" class="flex flex-col gap-4"></div>';
+                    const container = document.getElementById('pdf-scroller');
+                    for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+                        const page = await pdf.getPage(i);
+                        const canvas = document.createElement('canvas');
+                        const viewport = page.getViewport({ scale: 0.8 });
+                        canvas.width = viewport.width; canvas.height = viewport.height;
+                        canvas.className = "shadow-lg border border-border w-full";
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                        container.appendChild(canvas);
+                    }
+                } else if (['jpg', 'png', 'jpeg'].includes(asset.ext)) {
+                    stage.innerHTML = `<img src="${URL.createObjectURL(asset.file)}" class="max-w-full rounded shadow-2xl">`;
+                } else if (asset.ext === 'docx') {
+                    const buf = await asset.file.arrayBuffer();
+                    stage.innerHTML = `<div id="docx-v" class="bg-white p-4 w-full"></div>`;
+                    docx.renderAsync(buf, document.getElementById('docx-v'));
+                } else if (asset.ext === 'csv' || asset.ext === 'xlsx') {
+                    const data = await asset.file.arrayBuffer();
+                    const wb = XLSX.read(data, {type: 'array'});
+                    const html = XLSX.utils.sheet_to_html(wb.Sheets[wb.SheetNames[0]]);
+                    stage.innerHTML = `<div class="bg-panel p-2 border border-border text-[10px] w-full overflow-auto text-gray-400">${html}</div>`;
+                    stage.querySelectorAll('table').forEach(t => t.className = "w-full border-collapse border border-gray-800");
+                } else {
+                    stage.innerHTML = `<div class="text-xs text-gray-500 py-20 uppercase font-mono tracking-widest">No Live Preview</div>`;
+                }
+            }, 100);
+
+            document.getElementById('download-btn').onclick = () => {
+                const url = URL.createObjectURL(asset.file);
+                const a = document.createElement('a');
+                a.href = url; a.download = asset.name; a.click();
+            };
+        }
+
+        function closeInspector() {
+            document.getElementById('inspector').classList.remove('open');
+            document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('selected'));
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
         }
     </script>
 
