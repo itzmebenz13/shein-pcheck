@@ -10,7 +10,6 @@
     <style>
         :root {
             --bg-deep: #0E0E0E;
-            --bg-surface: #1A1A1A;
             --bg-panel: #141414;
             --border-subtle: #2A2A2A;
             --border-active: #333333;
@@ -42,7 +41,6 @@
             padding: 20px;
         }
 
-        /* Responsive Artboard Scaling */
         .artboard-wrapper {
             transition: transform 0.3s ease;
             display: flex;
@@ -53,14 +51,12 @@
         .artboard {
             position: relative;
             background: white;
-            padding: 20px; /* Reduced for mobile */
+            padding: 20px;
             box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 30px 60px rgba(0,0,0,0.5);
             transition: transform 0.2s ease;
         }
 
-        @media (min-width: 768px) {
-            .artboard { padding: 40px; }
-        }
+        @media (min-width: 768px) { .artboard { padding: 40px; } }
 
         .artboard::before {
             content: 'Layer — QR_Matrix_Output';
@@ -86,36 +82,11 @@
         .pro-input-group { padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); }
         .pro-label { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
         .pro-input, .pro-select { background: #000; border: 1px solid var(--border-active); border-radius: 4px; color: white; font-size: 12px; padding: 8px 10px; width: 100%; font-family: 'JetBrains Mono', monospace; outline: none; transition: all 0.2s; }
-        .pro-input:focus { border-color: var(--accent-blue); background: #050505; }
+        .pro-input:focus, .pro-select:focus { border-color: var(--accent-blue); background: #050505; }
 
-        /* Sidebar Panels */
-        .panel-drawer {
-            position: fixed;
-            top: 56px;
-            bottom: 0;
-            width: 280px;
-            background: var(--bg-panel);
-            border-right: 1px solid var(--border-subtle);
-            z-index: 100;
-            transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        .panel-drawer { position: fixed; top: 56px; bottom: 0; width: 280px; background: var(--bg-panel); border-right: 1px solid var(--border-subtle); z-index: 100; transform: translateX(-100%); transition: transform 0.3s ease; }
         .panel-drawer.open { transform: translateX(0); }
-
-        .panel-right {
-            position: fixed;
-            top: 56px;
-            bottom: 0;
-            right: 0;
-            width: 300px;
-            background: var(--bg-panel);
-            border-left: 1px solid var(--border-subtle);
-            z-index: 100;
-            transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        .panel-right { position: fixed; top: 56px; bottom: 0; right: 0; width: 300px; background: var(--bg-panel); border-left: 1px solid var(--border-subtle); z-index: 100; transform: translateX(100%); transition: transform 0.3s ease; }
         .panel-right.open { transform: translateX(0); }
 
         @media (min-width: 1024px) {
@@ -126,34 +97,34 @@
 
         .layer-item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; border-left: 2px solid transparent; }
         .layer-item.active { background: rgba(24, 160, 251, 0.08); color: var(--text-main); border-left-color: var(--accent-blue); }
-        .layer-item .visibility-toggle { margin-left: auto; opacity: 0.5; }
+        .layer-item .visibility-toggle { margin-left: auto; color: var(--accent-blue); }
 
         .btn-action { background: var(--accent-blue); color: white; font-weight: 700; font-size: 11px; padding: 8px 16px; border-radius: 4px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; }
 
-        #main-canvas { image-rendering: auto; display: block; max-width: 100%; height: auto; }
+        #main-canvas { display: block; max-width: 100%; height: auto; }
         .handle { position: absolute; width: 6px; height: 6px; background: white; border: 1px solid var(--accent-blue); z-index: 10; }
         .h-tl { top: -3px; left: -3px; } .h-tr { top: -3px; right: -3px; } .h-bl { bottom: -3px; left: -3px; } .h-br { bottom: -3px; right: -3px; }
 
         .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #111; border: 1px solid var(--border-subtle); color: white; padding: 10px 24px; border-radius: 8px; font-size: 12px; font-weight: 500; box-shadow: 0 20px 40px rgba(0,0,0,0.6); display: none; z-index: 2000; }
-
-        /* Overlay for mobile drawer */
-        .drawer-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(2px);
-            z-index: 90;
-            display: none;
-        }
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 90; display: none; }
         .drawer-overlay.active { display: block; }
+        
+        .loading-shimmer {
+            animation: shimmer 1.5s infinite linear;
+            background: linear-gradient(90deg, #18A0FB00 0%, #18A0FB33 50%, #18A0FB00 100%);
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+        .icon-btn { transition: color 0.2s; }
+        .icon-btn:hover { color: white; }
     </style>
 </head>
 <body class="flex flex-col">
 
-    <!-- Top Navigation -->
     <nav class="h-14 border-b border-[#2A2A2A] bg-[#141414] flex items-center justify-between px-4 z-[150]">
         <div class="flex items-center gap-2 md:gap-6">
-            <button onclick="toggleDrawer('left')" class="mobile-toggle p-2 text-white/60 hover:text-white">
+            <button onclick="toggleDrawer('left')" class="mobile-toggle p-2 text-white/60 icon-btn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
             <div class="flex items-center gap-2">
@@ -162,16 +133,11 @@
                 </div>
                 <span class="font-bold text-xs tracking-widest uppercase hidden sm:inline">ARCHITECT<span class="text-[#18A0FB]">PRO</span></span>
             </div>
-            <div class="h-6 w-px bg-white/10 hidden md:block"></div>
-            <div class="hidden md:flex gap-4 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                <span class="text-white">Workspace</span>
-                <span>Assets</span>
-            </div>
         </div>
         <div class="flex items-center gap-2 md:gap-4">
-            <button onclick="copyToClipboard()" class="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white">Copy link</button>
-            <button onclick="downloadQR()" class="btn-action text-[10px] md:text-[11px] px-3 md:px-4 py-1.5 md:py-2">Export</button>
-            <button onclick="toggleDrawer('right')" class="mobile-toggle p-2 text-white/60 hover:text-white">
+            <button onclick="copyToClipboard()" class="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white">Copy URI</button>
+            <button onclick="downloadQR()" class="btn-action text-[10px] md:text-[11px] px-3 md:px-4 py-2">Export Asset</button>
+            <button onclick="toggleDrawer('right')" class="mobile-toggle p-2 text-white/60 icon-btn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
         </div>
@@ -180,289 +146,335 @@
     <div class="flex flex-1 overflow-hidden relative">
         <div id="overlay" class="drawer-overlay" onclick="closeDrawers()"></div>
 
-        <!-- Left Sidebar: Layers (Responsive Drawer) -->
         <aside id="drawer-left" class="panel-drawer">
-            <div class="p-4 border-b border-white/5 flex justify-between items-center">
-                <span class="pro-label !mb-0">Layers</span>
-                <button onclick="closeDrawers()" class="md:hidden text-white/40"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
-            <div class="flex-1 overflow-y-auto pt-2">
+            <div class="p-4 border-b border-white/5"><span class="pro-label">Layers</span></div>
+            <div class="flex-1 overflow-y-auto">
                 <div id="layer-logo" class="layer-item active" onclick="toggleLayer('logo')">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/></svg>
-                    Logo_Overlay
-                    <span class="visibility-toggle" id="vis-logo"></span>
+                    Logo_Overlay <span class="visibility-toggle" id="vis-logo"></span>
                 </div>
                 <div id="layer-qr" class="layer-item active" onclick="toggleLayer('qr')">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16"/></svg>
-                    QR_Matrix
-                    <span class="visibility-toggle" id="vis-qr"></span>
+                    QR_Matrix <span class="visibility-toggle" id="vis-qr"></span>
                 </div>
                 <div id="layer-bg" class="layer-item active" onclick="toggleLayer('bg')">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/></svg>
-                    Background
-                    <span class="visibility-toggle" id="vis-bg"></span>
+                    Background <span class="visibility-toggle" id="vis-bg"></span>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Workspace -->
         <main class="canvas-container" id="canvas-stage">
             <div class="artboard-wrapper" id="artboard-scaler">
                 <div class="artboard" id="artboard-el">
-                    <div class="handle h-tl"></div>
-                    <div class="handle h-tr"></div>
-                    <div class="handle h-bl"></div>
-                    <div class="handle h-br"></div>
-                    
+                    <div class="handle h-tl"></div><div class="handle h-tr"></div>
+                    <div class="handle h-bl"></div><div class="handle h-br"></div>
                     <canvas id="main-canvas"></canvas>
                     <div id="hidden-qr" style="display:none"></div>
-
                     <div class="dimension-x" id="dim-x">512 px</div>
                     <div class="dimension-y" id="dim-y">512 px</div>
                 </div>
             </div>
         </main>
 
-        <!-- Right Sidebar: Inspector (Responsive Drawer) -->
         <aside id="drawer-right" class="panel-right">
-            <div class="p-4 border-b border-white/5 flex justify-between items-center">
-                <span class="pro-label !mb-0">Properties</span>
-                <button onclick="closeDrawers()" class="md:hidden text-white/40"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
+            <div class="p-4 border-b border-white/5"><span class="pro-label">Properties</span></div>
             <div class="flex-1 overflow-y-auto">
                 <div class="pro-input-group">
-                    <span class="pro-label">Source URI</span>
-                    <input type="text" id="qr-input" class="pro-input mt-1" placeholder="https://..." oninput="debouncedGenerate()" value="https://google.com">
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="text-[10px] font-medium text-[#757575] uppercase tracking-wider">Optimize</span>
-                        <input type="checkbox" id="shorten-toggle" checked onchange="generateQR()">
+                    <span class="pro-label">Data URI</span>
+                    <input type="text" id="qr-input" class="pro-input mt-1" oninput="debouncedGenerate()" value="https://google.com">
+                    <div id="shortening-indicator" class="hidden h-1 mt-2 rounded-full loading-shimmer"></div>
+                    <div id="api-status-note" class="hidden text-[9px] text-amber-500 mt-1 font-medium italic">Service restricted (CORS). Using full link.</div>
+                    
+                    <div class="mt-4 flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-[10px] font-medium text-[#757575] uppercase tracking-wider">Optimize Matrix</span>
+                                <span class="text-[9px] text-[#555]">Minimizes dot density</span>
+                            </div>
+                            <input type="checkbox" id="shorten-toggle" checked onchange="generateQR()">
+                        </div>
+                        <div id="shortener-selection-group">
+                            <span class="text-[9px] text-white/30 mb-1 block uppercase">Provider</span>
+                            <select id="shortener-service" class="pro-select" onchange="resetShortenerCache(); generateQR();">
+                                <option value="tinyurl">TinyURL</option>
+                                <option value="dagd">da.gd (Minimal)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-
                 <div class="pro-input-group">
                     <span class="pro-label">Resolution</span>
-                    <select id="qr-size" class="pro-select mt-1" onchange="updateDimensions()">
+                    <select id="qr-size" class="pro-input mt-1" onchange="updateDimensions()">
                         <option value="256">256px</option>
                         <option value="512" selected>512px</option>
                         <option value="1024">1024px</option>
                     </select>
                 </div>
-
                 <div class="pro-input-group">
-                    <span class="pro-label">Colors</span>
-                    <div class="grid grid-cols-2 gap-3 mt-2">
-                        <div>
-                            <span class="text-[9px] text-white/30 mb-1 block">Primary</span>
-                            <div class="flex items-center gap-2 bg-black p-1.5 rounded border border-[#2A2A2A]">
-                                <input type="color" id="qr-color-dark" value="#000000" class="w-6 h-6 bg-transparent border-none p-0 cursor-pointer" oninput="generateQR()">
-                            </div>
-                        </div>
-                        <div>
-                            <span class="text-[9px] text-white/30 mb-1 block">Canvas</span>
-                            <div class="flex items-center gap-2 bg-black p-1.5 rounded border border-[#2A2A2A]">
-                                <input type="color" id="qr-color-light" value="#ffffff" class="w-6 h-6 bg-transparent border-none p-0 cursor-pointer" oninput="generateQR()">
-                            </div>
-                        </div>
+                    <span class="pro-label">Styles</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="color" id="qr-color-dark" value="#000000" class="w-full h-8 bg-black border border-white/10 rounded cursor-pointer" oninput="generateQR()">
+                        <input type="color" id="qr-color-light" value="#ffffff" class="w-full h-8 bg-black border border-white/10 rounded cursor-pointer" oninput="generateQR()">
                     </div>
                 </div>
-
                 <div class="pro-input-group">
-                    <span class="pro-label">Logo Overlay</span>
-                    <div class="mt-2 space-y-3">
-                        <input type="file" id="logo-upload" accept="image/*" class="hidden" onchange="handleLogo(event)">
-                        <button onclick="document.getElementById('logo-upload').click()" class="w-full text-[9px] font-bold uppercase tracking-widest bg-white/5 border border-dashed border-white/20 py-2.5 rounded hover:bg-white/10 transition">Upload Asset</button>
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] text-white/40 uppercase">Scale</span>
-                            <input type="range" id="logo-scale" min="0.1" max="0.35" step="0.01" value="0.22" oninput="generateQR()" class="w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#18A0FB]">
-                        </div>
-                    </div>
+                    <span class="pro-label">Logo Asset</span>
+                    <input type="file" id="logo-upload" accept="image/*" class="hidden" onchange="handleLogo(event)">
+                    <button onclick="document.getElementById('logo-upload').click()" class="w-full text-[9px] font-bold uppercase bg-white/5 border border-dashed border-white/20 py-3 rounded hover:bg-white/10 transition">Import Image</button>
+                    <input type="range" id="logo-scale" min="0.1" max="0.35" step="0.01" value="0.22" oninput="generateQR()" class="w-full mt-4 accent-[#18A0FB]">
                 </div>
-            </div>
-            <div class="p-4 bg-black/20 mt-auto">
-                <p class="text-[9px] text-center text-white/20 font-mono tracking-tighter uppercase">Engine: Core_Square_V2.1</p>
             </div>
         </aside>
     </div>
 
-    <div id="toast" class="toast">ASSET EXPORTED</div>
+    <div id="toast" class="toast">Action Applied</div>
 
     <script>
         let logoImage = null;
         let layers = { logo: true, qr: true, bg: true };
         let debounceTimer;
+        let cachedShortUrl = null;
+        let lastShortenedInput = "";
+        let lastShortenedService = "";
 
         const ICON_EYE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
         const ICON_EYE_OFF = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
 
-        // UI Helpers
         function toggleDrawer(side) {
-            const drawerId = side === 'left' ? 'drawer-left' : 'drawer-right';
-            const drawer = document.getElementById(drawerId);
-            const overlay = document.getElementById('overlay');
+            const drawer = document.getElementById(side === 'left' ? 'drawer-left' : 'drawer-right');
+            if (!drawer) return;
             const isOpen = drawer.classList.contains('open');
-            
             closeDrawers();
-            if (!isOpen) {
-                drawer.classList.add('open');
-                overlay.classList.add('active');
-            }
+            if (!isOpen) { drawer.classList.add('open'); document.getElementById('overlay').classList.add('active'); }
         }
 
         function closeDrawers() {
             document.querySelectorAll('.panel-drawer, .panel-right').forEach(d => d.classList.remove('open'));
-            document.getElementById('overlay').classList.remove('active');
+            const overlay = document.getElementById('overlay');
+            if (overlay) overlay.classList.remove('active');
         }
 
         function autoScaleArtboard() {
             const wrapper = document.getElementById('artboard-scaler');
             const artboard = document.getElementById('artboard-el');
             const stage = document.getElementById('canvas-stage');
-            
-            const stageWidth = stage.clientWidth - 40;
-            const stageHeight = stage.clientHeight - 80;
-            const artboardWidth = artboard.offsetWidth;
-            const artboardHeight = artboard.offsetHeight;
-
-            const scale = Math.min(stageWidth / artboardWidth, stageHeight / artboardHeight, 1);
+            if (!wrapper || !artboard || !stage) return;
+            const scale = Math.min((stage.clientWidth - 40) / artboard.offsetWidth, (stage.clientHeight - 80) / artboard.offsetHeight, 1);
             wrapper.style.transform = `scale(${scale})`;
         }
 
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg.toUpperCase();
-            toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 2000);
+        function resetShortenerCache() {
+            cachedShortUrl = null;
+            lastShortenedInput = "";
+            lastShortenedService = "";
+            const statusNote = document.getElementById('api-status-note');
+            if (statusNote) statusNote.classList.add('hidden');
+        }
+
+        async function getShortUrl(longUrl) {
+            const service = document.getElementById('shortener-service').value;
+            
+            if (longUrl === lastShortenedInput && service === lastShortenedService && cachedShortUrl) {
+                return cachedShortUrl;
+            }
+            
+            if (longUrl.length < 25 || !longUrl.startsWith('http')) return longUrl;
+
+            const indicator = document.getElementById('shortening-indicator');
+            const statusNote = document.getElementById('api-status-note');
+            
+            if (indicator) indicator.classList.remove('hidden');
+            if (statusNote) statusNote.classList.add('hidden');
+            
+            let endpoint = "";
+            if (service === 'tinyurl') {
+                endpoint = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`;
+            } else if (service === 'dagd') {
+                endpoint = `https://da.gd/s?url=${encodeURIComponent(longUrl)}`;
+            }
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                const res = await fetch(endpoint, { signal: controller.signal }).catch((err) => {
+                    if (err.name === 'AbortError') throw new Error('TIMEOUT');
+                    throw new Error('CORS_OR_NETWORK');
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (res && res.ok) {
+                    const short = await res.text();
+                    cachedShortUrl = short.trim();
+                    lastShortenedInput = longUrl;
+                    lastShortenedService = service;
+                    return cachedShortUrl;
+                } else {
+                    throw new Error("PROVIDER_ERROR");
+                }
+            } catch (e) {
+                console.warn("Shortening restricted by provider headers or CORS policy.");
+                if (statusNote) statusNote.classList.remove('hidden');
+                return longUrl;
+            } finally {
+                if (indicator) indicator.classList.add('hidden');
+            }
         }
 
         function toggleLayer(id) {
             layers[id] = !layers[id];
-            const el = document.getElementById(`layer-${id}`);
-            el.classList.toggle('active', layers[id]);
+            const layerEl = document.getElementById(`layer-${id}`);
+            if (layerEl) layerEl.classList.toggle('active', layers[id]);
             updateLayerIcons();
             generateQR();
         }
 
         function updateLayerIcons() {
             Object.keys(layers).forEach(id => {
-                const iconEl = document.getElementById(`vis-${id}`);
-                if (iconEl) iconEl.innerHTML = layers[id] ? ICON_EYE : ICON_EYE_OFF;
+                const el = document.getElementById(`vis-${id}`);
+                if (el) el.innerHTML = layers[id] ? ICON_EYE : ICON_EYE_OFF;
             });
         }
 
         function updateDimensions() {
-            const size = document.getElementById("qr-size").value;
-            document.getElementById("dim-x").innerText = size + " px";
-            document.getElementById("dim-y").innerText = size + " px";
+            const s = document.getElementById("qr-size").value;
+            const dimX = document.getElementById("dim-x");
+            const dimY = document.getElementById("dim-y");
+            if (dimX) dimX.innerText = s + " px";
+            if (dimY) dimY.innerText = s + " px";
             generateQR();
-            setTimeout(autoScaleArtboard, 100);
         }
 
-        function handleLogo(e) {
-            const file = e.target.files[0];
+        function handleLogo(event) {
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = f => {
                 const img = new Image();
-                img.onload = () => {
-                    logoImage = img;
-                    generateQR();
-                    showToast("Imported");
-                };
-                img.src = event.target.result;
+                img.onload = () => { logoImage = img; generateQR(); };
+                img.src = f.target.result;
             };
             reader.readAsDataURL(file);
         }
 
         function debouncedGenerate() {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(generateQR, 200);
+            debounceTimer = setTimeout(generateQR, 400);
         }
 
-        function generateQR() {
-            const hiddenContainer = document.getElementById("hidden-qr");
+        async function generateQR() {
+            const inputEl = document.getElementById("qr-input");
+            const inputVal = inputEl ? inputEl.value : "";
+            const text = inputVal.trim() || "ARCHITECT";
+            const optimizeEl = document.getElementById("shorten-toggle");
+            const optimize = optimizeEl ? optimizeEl.checked : true;
+            
+            let finalData = text;
+            if (optimize) {
+                finalData = await getShortUrl(text);
+            }
+
             const canvas = document.getElementById("main-canvas");
+            if (!canvas) return;
             const ctx = canvas.getContext("2d");
-            const text = document.getElementById("qr-input").value || "ARCHITECT";
-            const size = parseInt(document.getElementById("qr-size").value);
+            const size = parseInt(document.getElementById("qr-size").value) || 512;
             const dark = document.getElementById("qr-color-dark").value;
             const light = document.getElementById("qr-color-light").value;
-            const optimize = document.getElementById("shorten-toggle").checked;
 
-            hiddenContainer.innerHTML = "";
-            canvas.width = size;
-            canvas.height = size;
+            const hidden = document.getElementById("hidden-qr");
+            hidden.innerHTML = "";
+            canvas.width = size; canvas.height = size;
 
-            new QRCode(hiddenContainer, {
-                text: text,
-                width: size,
-                height: size,
-                correctLevel: optimize ? QRCode.CorrectLevel.L : QRCode.CorrectLevel.H
-            });
+            try {
+                const safeText = unescape(encodeURIComponent(finalData));
+                
+                const generateMatrix = (targetLevel) => {
+                    return new Promise((resolve, reject) => {
+                        try {
+                            const qrcode = new QRCode(hidden, {
+                                text: safeText,
+                                width: size,
+                                height: size,
+                                correctLevel: targetLevel
+                            });
+                            setTimeout(() => {
+                                const qCanvas = hidden.querySelector('canvas');
+                                if (qCanvas) resolve(qCanvas);
+                                else reject("Canvas null");
+                            }, 100);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                };
 
-            setTimeout(() => {
-                const rawCanvas = hiddenContainer.querySelector('canvas');
-                if (!rawCanvas) return;
+                let level = optimize ? QRCode.CorrectLevel.L : QRCode.CorrectLevel.H;
+                
+                let raw = await generateMatrix(level).catch(async () => {
+                    return await generateMatrix(QRCode.CorrectLevel.L);
+                });
+
+                if (!raw) return;
                 
                 ctx.fillStyle = layers.bg ? light : 'transparent';
                 ctx.fillRect(0, 0, size, size);
-
+                
                 if (layers.qr) {
-                    const rawCtx = rawCanvas.getContext('2d');
-                    const imageData = rawCtx.getImageData(0, 0, size, size);
-                    const pixels = imageData.data;
-                    
+                    const rawCtx = raw.getContext('2d');
+                    const pixels = rawCtx.getImageData(0, 0, size, size).data;
                     ctx.fillStyle = dark;
-                    for (let y = 0; y < size; y++) {
-                        for (let x = 0; x < size; x++) {
-                            const i = (y * size + x) * 4;
-                            if (pixels[i] < 128) {
-                                ctx.fillRect(x, y, 1, 1);
-                            }
+                    for (let i = 0; i < pixels.length; i += 4) {
+                        if (pixels[i] < 128) {
+                            const idx = i / 4;
+                            ctx.fillRect(idx % size, Math.floor(idx / size), 1, 1);
                         }
                     }
                 }
-
+                
                 if (layers.logo && logoImage) {
-                    const logoScale = parseFloat(document.getElementById('logo-scale').value);
-                    const logoSize = size * logoScale;
-                    const pos = (size - logoSize) / 2;
-                    
+                    const scaleEl = document.getElementById('logo-scale');
+                    const scale = scaleEl ? parseFloat(scaleEl.value) : 0.22;
+                    const lSize = size * scale;
+                    const p = (size - lSize) / 2;
                     ctx.fillStyle = layers.bg ? light : 'white';
-                    ctx.beginPath();
-                    ctx.roundRect(pos - 6, pos - 6, logoSize + 12, logoSize + 12, 8);
+                    ctx.beginPath(); 
+                    ctx.roundRect(p-6, p-6, lSize+12, lSize+12, 8); 
                     ctx.fill();
-                    
-                    ctx.drawImage(logoImage, pos, pos, logoSize, logoSize);
+                    ctx.drawImage(logoImage, p, p, lSize, lSize);
                 }
-            }, 60);
+                autoScaleArtboard();
+            } catch (err) {
+                console.error("QR Generation Failure:", err);
+            }
         }
 
         function downloadQR() {
             const canvas = document.getElementById("main-canvas");
+            if (!canvas) return;
             const link = document.createElement("a");
             link.href = canvas.toDataURL("image/png");
-            link.download = "ARCHITECT_QR.png";
+            link.download = "ARCHITECT_QR.png"; 
             link.click();
-            showToast("Success");
         }
 
         function copyToClipboard() {
-            const input = document.getElementById("qr-input").value;
-            const dummy = document.createElement("textarea");
-            document.body.appendChild(dummy);
-            dummy.value = input;
-            dummy.select();
+            const input = document.getElementById("qr-input");
+            if (!input) return;
+            input.select(); 
             document.execCommand("copy");
-            document.body.removeChild(dummy);
-            showToast("Copied");
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.style.display = 'block'; 
+                setTimeout(() => toast.style.display = 'none', 2000);
+            }
         }
 
-        window.onload = () => {
-            updateLayerIcons();
-            updateDimensions();
-            autoScaleArtboard();
+        window.onload = () => { 
+            updateLayerIcons(); 
+            updateDimensions(); 
         };
-        
         window.onresize = autoScaleArtboard;
     </script>
 </body>
