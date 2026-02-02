@@ -110,7 +110,6 @@
             <div class="h-5 w-[1px] bg-border mx-1 md:mx-2 shrink-0"></div>
             
             <!-- OPEN FILE BUTTON (Header) -->
-            <!-- Direct inline click for reliability -->
             <button onclick="document.getElementById('fileInput').click()" class="flex items-center gap-2 px-3 py-2 text-xs md:text-sm font-medium text-white bg-white/5 hover:bg-white/10 rounded-lg transition border border-white/5 active:bg-white/10 truncate max-w-[160px] md:max-w-none">
                 <i class="ph ph-folder-open text-base md:text-lg shrink-0"></i> 
                 <span class="truncate">Open File</span>
@@ -153,7 +152,6 @@
                         <p class="text-xs md:text-sm text-gray-400 mt-2">Tap to browse or drop file</p>
                     </div>
                     <!-- OPEN FILE BUTTON (Empty State) -->
-                    <!-- Direct inline click for reliability -->
                     <button onclick="document.getElementById('fileInput').click()" class="w-full py-3 bg-accent hover:bg-accentHover text-white rounded-xl font-medium transition shadow-lg text-sm">
                         Browse Files
                     </button>
@@ -399,7 +397,6 @@
         }
 
         async function loadPDF(arrayBuffer) {
-            // Safe usage of loaderText because it's now defined globally
             if(loaderText) loaderText.textContent = "Parsing PDF...";
             
             const typedArray = new Uint8Array(arrayBuffer);
@@ -419,7 +416,6 @@
                 if(loaderSub) loaderSub.textContent = `Page ${i} of ${totalPages}`;
                 const page = await pdf.getPage(i);
                 await createPageCard(page, i, scale);
-                // Breathe to prevent UI lockup
                 if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
             }
             showToast("Success", "PDF loaded successfully", "success");
@@ -462,6 +458,21 @@
         }
 
         function togglePageSelection(card, index) {
+            // SAFEGUARD: Don't allow selecting (deleting) if we only have 1 page total
+            if (totalPages <= 1) {
+                showToast("Locked", "Document must have at least one page", "error");
+                return;
+            }
+
+            // SAFEGUARD: Don't allow deleting ALL pages
+            // If the card is NOT currently selected (meaning we are ABOUT TO select/delete it)
+            if (!pagesToRemove.has(index)) {
+                 if (pagesToRemove.size + 1 >= totalPages) {
+                     showToast("Limit Reached", "You cannot remove all pages", "error");
+                     return;
+                 }
+            }
+
             const indicator = card.querySelector('.chk-indicator');
             const icon = indicator.querySelector('i');
             const overlay = card.querySelector('.deleted-overlay');
@@ -508,11 +519,20 @@
         }
 
         function clearSelection() {
-            pagesToRemove.clear();
-            document.querySelectorAll('.page-card.selected').forEach(card => {
-                const index = parseInt(card.dataset.index);
-                togglePageSelection(card, index); 
+            // FIX: Iterate through a COPY of the indices.
+            // If we iterate directly while modifying, it might cause issues or loop incorrectly.
+            const indices = Array.from(pagesToRemove);
+            
+            indices.forEach(index => {
+                // Find the card for this index
+                const card = document.querySelector(`.page-card[data-index="${index}"]`);
+                if (card) {
+                    togglePageSelection(card, index); // This will effectively deselect it
+                }
             });
+            
+            // Just in case, force clear the set
+            pagesToRemove.clear();
             updateSelectionUI();
         }
 
@@ -589,13 +609,14 @@
                 card.className = 'page-card opacity-60 cursor-not-allowed flex flex-col gap-1';
                 card.innerHTML = `
                     <div class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Slide ${i}</div>
-                    <div class="bg-white/5 rounded-lg aspect-[3/4] flex items-center justify-center border border-white/10 w-full">
+                    <div class="bg-white/5 rounded-lg aspect-[3/4] flex items-center justify-center border border-white/10 w-full flex-col gap-2 p-2 text-center">
                          <i class="ph ph-${type === 'pptx' ? 'presentation-chart' : 'file-doc'} text-3xl text-gray-600"></i>
+                         <span class="text-[10px] text-gray-500">Preview Unavailable<br>(Simulation Mode)</span>
                     </div>
                 `;
                 pagesGrid.appendChild(card);
             }
-            showToast("Viewer", "Visual Demo Only", "warning");
+            showToast("Viewer", "Simulated Mode - PDF Split Supported", "warning");
         }
 
         function updateStats(total) {
