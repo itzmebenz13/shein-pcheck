@@ -88,9 +88,14 @@
             filter: grayscale(100%);
         }
 
+        /* Advanced Loader Styles */
         .loader-overlay {
-            backdrop-filter: blur(8px);
-            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(12px);
+            background: rgba(10, 10, 10, 0.7);
+        }
+        
+        .loader-card {
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
         /* Switch Toggle Styling */
@@ -128,7 +133,6 @@
         <div class="flex items-center gap-2 md:gap-3 shrink-0">
             <span id="page-count-badge" class="hidden md:inline-block text-xs bg-black/40 border border-white/5 px-3 py-1.5 rounded-full text-gray-400 font-mono">0 Pages</span>
             
-            <!-- Standard Export (Hidden initially) -->
             <button id="exportBtn" onclick="exportFile(false)" class="hidden flex items-center justify-center gap-2 bg-accent hover:bg-accentHover active:bg-blue-600 text-white px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition shadow-lg shadow-blue-900/20">
                 <i class="ph ph-export font-bold text-lg md:text-base"></i> 
                 <span class="hidden md:inline">Export</span>
@@ -188,7 +192,6 @@
                 </button>
             </div>
 
-            <!-- File Info -->
             <div class="p-5 border-b border-border/50">
                 <div class="flex items-center gap-4 mb-5">
                     <div class="w-12 h-12 md:w-10 md:h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
@@ -208,7 +211,6 @@
                 </div>
             </div>
 
-            <!-- COMPRESSION TOOLS -->
             <div class="p-5 border-b border-border/50">
                 <div class="flex justify-between items-center mb-3">
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Compressor</span>
@@ -226,7 +228,6 @@
                 </div>
             </div>
 
-            <!-- SELECTION LIST -->
             <div class="p-5 flex-1 overflow-y-auto">
                 <div class="flex justify-between items-center mb-4">
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Splitter</span>
@@ -310,14 +311,27 @@
         </button>
     </div>
 
-    <!-- LOADER -->
-    <div id="loader" class="hidden fixed inset-0 loader-overlay z-[200] flex flex-col items-center justify-center gap-6 transition-opacity duration-300 px-4 text-center">
-        <div class="relative">
-            <div class="w-14 h-14 border-4 border-white/10 border-t-accent rounded-full animate-spin"></div>
-        </div>
-        <div>
-            <p id="loader-text" class="text-lg font-medium text-white tracking-wide">Processing...</p>
-            <p id="loader-sub" class="text-sm text-gray-400 mt-1">Please wait</p>
+    <!-- ADVANCED LOADER -->
+    <div id="loader" class="hidden fixed inset-0 loader-overlay z-[200] flex items-center justify-center transition-opacity duration-300">
+        <div class="bg-panel border border-white/10 rounded-2xl shadow-2xl p-8 w-full max-w-sm flex flex-col items-center relative overflow-hidden loader-card">
+            <!-- Animated Background Glow -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-50 animate-pulse"></div>
+            
+            <i id="loader-icon" class="ph ph-scan text-4xl text-accent mb-4 animate-bounce"></i>
+            
+            <h3 id="loader-text" class="text-lg font-medium text-white mb-1">Processing</h3>
+            <p id="loader-sub" class="text-xs text-gray-400 mb-6 text-center">Analyzing document structure...</p>
+            
+            <!-- Progress Bar -->
+            <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+                <div id="loader-progress" class="h-full bg-accent transition-all duration-300 ease-out" style="width: 0%"></div>
+            </div>
+            
+            <!-- Percentage Text -->
+            <div class="w-full flex justify-between items-center">
+                <span class="text-[10px] text-gray-600">Please wait...</span>
+                <span id="loader-pct" class="text-[10px] text-gray-300 font-mono font-bold">0%</span>
+            </div>
         </div>
     </div>
 
@@ -333,8 +347,8 @@
     <script>
         // --- GLOBAL VARIABLES ---
         let currentFile = null;
-        let currentFileBytes = null; // ArrayBuffer of original
-        let compressedPdfBytes = null; // ArrayBuffer of compressed result
+        let currentFileBytes = null;
+        let compressedPdfBytes = null;
         let originalFileName = "";
         let totalPages = 0;
         let pagesToRemove = new Set();
@@ -344,6 +358,9 @@
         const fileInput = document.getElementById('fileInput');
         const loaderText = document.getElementById('loader-text');
         const loaderSub = document.getElementById('loader-sub');
+        const loaderIcon = document.getElementById('loader-icon');
+        const loaderProgress = document.getElementById('loader-progress');
+        const loaderPct = document.getElementById('loader-pct');
         const comparisonModal = document.getElementById('comparison-modal');
 
         // --- INIT ---
@@ -355,7 +372,6 @@
                 fileInput.addEventListener('click', (e) => e.target.value = null);
             }
 
-            // Drag & Drop
             const dropZone = document.body;
             dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-white/5'); });
             dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('bg-white/5'); });
@@ -384,7 +400,7 @@
             try {
                 if (!file) return;
                 resetApp(false);
-                showLoader(true, "Reading PDF", "Loading data...");
+                showLoader(true, "Reading PDF", "Analyzing file structure...", 5, "ph-file-search");
 
                 currentFile = file;
                 originalFileName = file.name;
@@ -412,8 +428,8 @@
         }
 
         async function loadPDF(arrayBuffer) {
-            if(loaderText) loaderText.textContent = "Parsing PDF...";
-            // CRITICAL FIX: Always slice to prevent detachment
+            showLoader(true, "Parsing PDF", "Initializing document engine...", 10, "ph-scan");
+            
             const typedArray = new Uint8Array(arrayBuffer.slice(0));
             const loadingTask = pdfjsLib.getDocument(typedArray);
             const pdf = await loadingTask.promise;
@@ -422,18 +438,19 @@
             updateStats(totalPages);
             document.getElementById('exportBtn').classList.remove('hidden');
 
-            if(loaderText) loaderText.textContent = "Rendering...";
             const pagesGrid = document.getElementById('pages-grid');
             const isMobile = window.innerWidth < 768;
             const scale = isMobile ? 0.4 : 0.6; 
 
             for (let i = 1; i <= totalPages; i++) {
-                if(loaderSub) loaderSub.textContent = `Page ${i} of ${totalPages}`;
+                const progress = Math.round((i / totalPages) * 100);
+                showLoader(true, "Rendering Previews", `Processing Page ${i} of ${totalPages}`, progress, "ph-image");
+                
                 const page = await pdf.getPage(i);
                 await createPageCard(page, i, scale);
                 if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
             }
-            showToast("Success", "PDF loaded", "success");
+            showToast("Success", "PDF loaded successfully", "success");
         }
 
         async function createPageCard(page, pageNum, scale) {
@@ -537,20 +554,19 @@
             if (keepIndices.length === 0) return;
 
             try {
-                showLoader(true, "Compressing", "Analyzing potential savings...");
+                showLoader(true, "Initializing", "Preparing compression engine...", 0, "ph-arrows-in-line-horizontal");
                 if(typeof window.PDFLib === 'undefined') throw new Error("PDFLib not loaded");
 
                 const newPdf = await window.PDFLib.PDFDocument.create();
-                
-                // CRITICAL FIX: Slice to copy, preventing detachment
                 const typedArray = new Uint8Array(currentFileBytes.slice(0));
                 const loadingTask = pdfjsLib.getDocument(typedArray);
                 const pdfSrc = await loadingTask.promise;
 
                 for (let i = 0; i < keepIndices.length; i++) {
-                    const originalPageIndex = keepIndices[i] + 1;
-                    if(loaderSub) loaderSub.textContent = `Processing Page ${i + 1} of ${keepIndices.length}`;
+                    const progress = Math.round((i / keepIndices.length) * 100);
+                    showLoader(true, "Compressing", `Optimizing Page ${i + 1} of ${keepIndices.length}`, progress, "ph-arrows-in-line-horizontal");
 
+                    const originalPageIndex = keepIndices[i] + 1;
                     const page = await pdfSrc.getPage(originalPageIndex);
                     const viewport = page.getViewport({ scale: 1.0 });
 
@@ -572,6 +588,7 @@
                 }
 
                 compressedPdfBytes = await newPdf.save();
+                showLoader(false);
                 showComparisonModal(currentFileBytes.byteLength, compressedPdfBytes.byteLength);
 
             } catch (err) {
@@ -588,15 +605,12 @@
 
             try {
                 if (useCompressed && compressedPdfBytes) {
-                    // Download already compressed buffer (no slicing needed for saveAs, it reads)
                     downloadPDF(compressedPdfBytes, true);
                     closeModal();
                 } else {
-                    // Standard Split Export (No Compression)
-                    showLoader(true, "Exporting", "Creating PDF...");
+                    showLoader(true, "Exporting", "Creating PDF file...", 50, "ph-export");
                     await new Promise(r => setTimeout(r, 100));
 
-                    // CRITICAL FIX: Slice to copy
                     const pdfDoc = await window.PDFLib.PDFDocument.load(currentFileBytes.slice(0));
                     const newPdf = await window.PDFLib.PDFDocument.create();
                     const pages = await newPdf.copyPages(pdfDoc, keepIndices);
@@ -630,7 +644,6 @@
                 savingsEl.className = "text-sm text-orange-400 font-medium";
             }
 
-            // Bind the download button to the specific compressed bytes
             const btn = document.getElementById('btn-download-compressed');
             btn.onclick = () => exportFile(true);
 
@@ -724,12 +737,23 @@
             }
         }
 
-        function showLoader(show, text, sub) {
+        function showLoader(show, text, sub, progress, iconName = "ph-circle-notch") {
             const loader = document.getElementById('loader');
             if (show) {
                 loader.classList.remove('hidden');
-                if(loaderText) loaderText.textContent = text || "Loading...";
-                if (sub && loaderSub) loaderSub.textContent = sub;
+                if(loaderText) loaderText.textContent = text || "Processing";
+                if(loaderSub) loaderSub.textContent = sub || "Please wait...";
+                
+                // Update Progress
+                if (progress !== undefined && loaderProgress && loaderPct) {
+                    loaderProgress.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+                    loaderPct.textContent = `${Math.round(progress)}%`;
+                }
+                
+                // Update Icon
+                if (loaderIcon) {
+                    loaderIcon.className = `ph ${iconName} text-4xl text-accent mb-4 animate-bounce`;
+                }
             } else {
                 loader.classList.add('hidden');
             }
