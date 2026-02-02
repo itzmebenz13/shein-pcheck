@@ -275,15 +275,17 @@
 
     <script>
         // --- EVENT BINDING ---
-        // We bind the change listener immediately, not waiting for DOMContentLoaded
         const fileInput = document.getElementById('fileInput');
+        // Define these globally to fix ReferenceError
+        const loaderText = document.getElementById('loader-text');
+        const loaderSub = document.getElementById('loader-sub');
+
         if(fileInput) {
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files.length > 0) {
                     handleFile(e.target.files[0]);
                 }
             });
-            // Fix: Reset value on click so selecting the same file triggers change again
             fileInput.addEventListener('click', (e) => {
                 e.target.value = null;
             });
@@ -308,7 +310,6 @@
 
         // Initialize Library Settings
         if (typeof pdfjsLib !== 'undefined') {
-            // Set default worker. If this fails security check, we fallback to main thread later.
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
 
@@ -352,7 +353,6 @@
                 document.getElementById('grid-container').classList.remove('hidden');
 
                 if (ext === 'pdf') {
-                    // Try to process PDF. This includes the fallback logic.
                     await processPDFSafely(currentFileBytes);
                 } else if (['docx', 'pptx'].includes(ext)) {
                     await simulateOfficeDoc(ext);
@@ -380,12 +380,10 @@
             } catch (err) {
                 console.warn("Standard Worker Failed:", err);
                 
-                // Check if it's a security/worker error
                 if (err.message && (err.message.includes('Worker') || err.name === 'SecurityError' || err.message.includes('Setting up fake worker failed'))) {
                     showLoader(true, "Security Block Detected", "Switching to Compatibility Mode...");
                     
                     // FALLBACK: Disable Worker (Main Thread Mode)
-                    // This freezes UI slightly during parsing but WORKS everywhere (GitHub Pages etc)
                     pdfjsLib.GlobalWorkerOptions.workerSrc = ''; 
                     
                     try {
@@ -395,13 +393,14 @@
                          throw new Error("Failed to load PDF even in compatibility mode: " + fatalErr.message);
                     }
                 } else {
-                    throw err; // Re-throw real errors (bad file, etc)
+                    throw err; 
                 }
             }
         }
 
         async function loadPDF(arrayBuffer) {
-            loaderText.textContent = "Parsing PDF...";
+            // Safe usage of loaderText because it's now defined globally
+            if(loaderText) loaderText.textContent = "Parsing PDF...";
             
             const typedArray = new Uint8Array(arrayBuffer);
             const loadingTask = pdfjsLib.getDocument(typedArray);
@@ -411,13 +410,13 @@
             updateStats(totalPages);
             document.getElementById('exportBtn').classList.remove('hidden');
 
-            loaderText.textContent = "Rendering...";
+            if(loaderText) loaderText.textContent = "Rendering...";
             
             const isMobile = window.innerWidth < 768;
             const scale = isMobile ? 0.4 : 0.6; 
 
             for (let i = 1; i <= totalPages; i++) {
-                loaderSub.textContent = `Page ${i} of ${totalPages}`;
+                if(loaderSub) loaderSub.textContent = `Page ${i} of ${totalPages}`;
                 const page = await pdf.getPage(i);
                 await createPageCard(page, i, scale);
                 // Breathe to prevent UI lockup
@@ -656,8 +655,8 @@
             const loader = document.getElementById('loader');
             if (show) {
                 loader.classList.remove('hidden');
-                document.getElementById('loader-text').textContent = text || "Loading...";
-                if (sub) document.getElementById('loader-sub').textContent = sub;
+                if(loaderText) loaderText.textContent = text || "Loading...";
+                if (sub && loaderSub) loaderSub.textContent = sub;
             } else {
                 loader.classList.add('hidden');
             }
