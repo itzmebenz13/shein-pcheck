@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux PDF Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // Figma-inspired Palette
+                        bg: '#1E1E1E',       // Main Canvas
+                        surface: '#2C2C2C',  // Panels/Bars
+                        border: '#444444',   // Borders
+                        primary: '#0C8CE9',  // Selection Blue
+                        danger: '#F24822',   // Figma Red
+                        text: {
+                            main: '#FFFFFF',
+                            muted: '#B3B3B3'
+                        }
+                    },
+                    boxShadow: {
+                        'float': '0 8px 24px rgba(0,0,0,0.4)',
+                        'glow': '0 0 0 2px #0C8CE9',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #1E1E1E;
+            color: #FFFFFF;
+            overflow: hidden;
+        }
+
+        /* Canvas Grid Pattern */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, #2a2a2a 1px, transparent 1px),
+                linear-gradient(to bottom, #2a2a2a 1px, transparent 1px);
+        }
+
+        /* Page Interaction Styles */
+        .page-wrapper {
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease;
+        }
+
+        .page-card {
+            position: relative;
+            transition: box-shadow 0.15s ease;
+        }
+
+        /* Hover State (Blue Border) */
+        .page-card:hover::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border: 2px solid #0C8CE9;
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Removed State (Red Overlay) */
+        .page-card.is-removed {
+            opacity: 0.4;
+            filter: grayscale(100%);
+        }
+
+        .page-card.is-removed::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border: 2px solid #F24822; /* Red Border */
+            background-color: rgba(242, 72, 34, 0.1);
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 20;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23F24822' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 48px;
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            margin-top: -5px;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            background: #444;
+        }
+
+        /* Loader */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden-fade {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col font-sans select-none bg-grid">
+
+    <!-- Top Bar: Minimalist -->
+    <header class="h-12 bg-surface border-b border-black flex items-center justify-between px-4 z-50 shrink-0">
+        <!-- Left: Branding/Menu -->
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-5 h-5 bg-primary rounded flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <span class="font-semibold text-sm tracking-wide">Flux</span>
+            </div>
+            <div class="h-4 w-[1px] bg-border"></div>
+            <!-- File Name (Editable feel) -->
+            <div class="text-xs text-text-muted hover:text-white transition-colors cursor-default" id="header-filename">
+                Untitled Project
+            </div>
+        </div>
+
+        <!-- Center: Zoom Controls (Only visible when active) -->
+        <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3 opacity-0 transition-opacity duration-300" id="zoom-controls">
+            <button class="text-text-muted hover:text-white" onclick="adjustZoom(-0.1)">-</button>
+            <span class="text-xs font-mono text-text-muted w-12 text-center" id="zoom-label">100%</span>
+            <button class="text-text-muted hover:text-white" onclick="adjustZoom(0.1)">+</button>
+        </div>
+
+        <!-- Right: Status -->
+        <div class="text-xs text-text-muted">
+            <span id="header-status">Ready</span>
+        </div>
+    </header>
+
+    <!-- Main Canvas Area -->
+    <main class="flex-1 relative overflow-hidden flex flex-col">
+        
+        <!-- Scrollable Surface -->
+        <div id="canvas-scroll" class="flex-1 overflow-y-auto overflow-x-hidden p-10 flex flex-col items-center">
+            
+            <!-- Empty State / Drop Zone (Centered) -->
+            <div id="drop-zone" class="flex flex-col items-center justify-center h-full w-full max-w-2xl transition-all duration-300">
+                <div class="border border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center hover:bg-surface/50 hover:border-primary transition-all cursor-pointer group w-full aspect-[2/1]">
+                    <div class="w-12 h-12 mb-4 rounded-full bg-surface border border-border flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-text-muted group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-medium mb-1">Import PDF</h2>
+                    <p class="text-xs text-text-muted mb-6">Drag and drop, or click to browse</p>
+                    <button class="px-4 py-2 bg-primary hover:bg-blue-500 text-white text-xs font-medium rounded shadow-sm transition-colors">
+                        Choose File
+                    </button>
+                    <input type="file" id="file-input" accept="application/pdf" class="hidden">
+                </div>
+            </div>
+
+            <!-- Page Grid (Injected) -->
+            <div id="page-grid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 w-full max-w-[1600px] origin-top pb-32">
+                <!-- Pages go here -->
+            </div>
+
+        </div>
+
+        <!-- Floating Bottom Bar (Stats & Action) -->
+        <div id="floating-bar" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-surface border border-border rounded-lg shadow-float flex items-center p-2 gap-4 transition-all duration-500 hidden-fade z-40">
+            
+            <!-- Stats Group -->
+            <div class="flex items-center gap-4 px-3 border-r border-border h-full">
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-text-muted uppercase tracking-wider font-medium">Pages</span>
+                    <span class="text-sm font-semibold" id="stat-total">0</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-text-muted uppercase tracking-wider font-medium">Removed</span>
+                    <span class="text-sm font-semibold text-danger" id="stat-removed">0</span>
+                </div>
+            </div>
+
+            <!-- Context Info -->
+            <div class="px-2 text-xs text-text-muted w-48 truncate hidden md:block">
+                Select pages to remove from export.
+            </div>
+
+            <!-- Action Button -->
+            <button id="export-btn" class="bg-primary hover:bg-blue-500 text-white px-4 py-2.5 rounded text-xs font-medium flex items-center gap-2 transition-all active:scale-95">
+                <span>Export PDF</span>
+                <div id="export-spinner" class="spinner hidden"></div>
+            </button>
+            
+             <!-- Reset Icon -->
+             <button onclick="resetApp()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-border text-text-muted transition-colors" title="Close File">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Overlay Loader -->
+    <div id="overlay-loader" class="fixed inset-0 bg-bg/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center">
+        <div class="spinner border-t-primary w-8 h-8 mb-4"></div>
+        <p class="text-sm font-medium">Processing Document...</p>
+    </div>
+
+    <script>
+        // Setup PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // State
+        const state = {
+            pdfDoc: null,
+            pdfBytes: null,
+            fileName: 'Untitled',
+            removedPages: new Set(),
+            scale: 1.0,
+            rendered: false
+        };
+
+        // DOM Elements
+        const els = {
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            pageGrid: document.getElementById('page-grid'),
+            floatingBar: document.getElementById('floating-bar'),
+            headerFilename: document.getElementById('header-filename'),
+            zoomControls: document.getElementById('zoom-controls'),
+            zoomLabel: document.getElementById('zoom-label'),
+            statTotal: document.getElementById('stat-total'),
+            statRemoved: document.getElementById('stat-removed'),
+            overlay: document.getElementById('overlay-loader'),
+            exportBtn: document.getElementById('export-btn'),
+            exportSpinner: document.getElementById('export-spinner')
+        };
+
+        // Init Events
+        els.dropZone.addEventListener('click', () => els.fileInput.click());
+        els.fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        
+        // Drag & Drop
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if(e.dataTransfer.files.length && e.dataTransfer.files[0].type === 'application/pdf') {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        els.exportBtn.addEventListener('click', exportPDF);
+
+        async function handleFile(file) {
+            if (!file || file.type !== 'application/pdf') return;
+
+            // UI Reset
+            state.removedPages.clear();
+            state.fileName = file.name;
+            els.headerFilename.textContent = file.name;
+            els.overlay.classList.remove('hidden');
+            els.overlay.classList.add('flex');
+
+            try {
+                // Load PDF
+                const buffer = await file.arrayBuffer();
+                state.pdfBytes = buffer;
+                const loadingTask = pdfjsLib.getDocument(buffer);
+                state.pdfDoc = await loadingTask.promise;
+
+                // Render Grid
+                await renderGrid();
+
+                // Show UI
+                els.dropZone.classList.add('hidden');
+                els.pageGrid.classList.remove('hidden');
+                
+                // Animate Floating Bar In
+                els.floatingBar.classList.remove('hidden-fade');
+                els.zoomControls.classList.remove('opacity-0');
+                
+                updateStats();
+
+            } catch (err) {
+                console.error(err);
+                alert("Could not load PDF. It might be corrupted or password protected.");
+            } finally {
+                els.overlay.classList.add('hidden');
+                els.overlay.classList.remove('flex');
+            }
+        }
+
+        async function renderGrid() {
+            els.pageGrid.innerHTML = '';
+            const numPages = state.pdfDoc.numPages;
+
+            for (let i = 1; i <= numPages; i++) {
+                // Wrapper for page number and card
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col gap-3 items-center page-wrapper fade-in-up';
+                
+                // The Card (Visual)
+                const card = document.createElement('div');
+                card.className = 'page-card w-full bg-white rounded-md shadow-sm aspect-[1/1.4] cursor-pointer overflow-hidden border border-transparent';
+                card.onclick = () => togglePage(i, card);
+
+                // Canvas
+                const canvas = document.createElement('canvas');
+                canvas.className = 'w-full h-full object-contain pointer-events-none';
+                card.appendChild(canvas);
+
+                // Page Number Label
+                const label = document.createElement('span');
+                label.className = 'text-[10px] text-text-muted font-mono';
+                label.textContent = `${i}`;
+
+                wrapper.appendChild(card);
+                wrapper.appendChild(label);
+                els.pageGrid.appendChild(wrapper);
+
+                // Lazy render (batching could be added for huge docs, keeping simple for now)
+                renderThumbnail(i, canvas);
+            }
+        }
+
+        async function renderThumbnail(pageNum, canvas) {
+            try {
+                const page = await state.pdfDoc.getPage(pageNum);
+                // Render at higher quality then scale down via CSS for crispness
+                const viewport = page.getViewport({ scale: 0.5 }); 
+                
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                await page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+            } catch(e) { console.error(e); }
+        }
+
+        function togglePage(pageNum, cardEl) {
+            if (state.removedPages.has(pageNum)) {
+                state.removedPages.delete(pageNum);
+                cardEl.classList.remove('is-removed');
+            } else {
+                state.removedPages.add(pageNum);
+                cardEl.classList.add('is-removed');
+            }
+            updateStats();
+        }
+
+        function updateStats() {
+            els.statTotal.textContent = state.pdfDoc ? state.pdfDoc.numPages : 0;
+            els.statRemoved.textContent = state.removedPages.size;
+        }
+
+        function adjustZoom(delta) {
+            state.scale = Math.max(0.5, Math.min(2.0, state.scale + delta));
+            els.zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
+            
+            // Adjust grid columns based on zoom
+            // Simple logic: Base width ~200px. 
+            // We scale the whole grid container or change col width.
+            // Let's change grid gap and min-width logic essentially
+            
+            // For CSS Grid, simpler to scale the wrapper or change grid classes.
+            // Let's just scale the container style for smooth effect
+            els.pageGrid.style.transform = `scale(${state.scale})`;
+            els.pageGrid.style.marginTop = `${(state.scale - 1) * 100}px`; // Compensation
+        }
+
+        async function exportPDF() {
+            if (state.removedPages.size === 0 && !confirm("No pages marked for removal. Export original?")) return;
+
+            const btnText = els.exportBtn.querySelector('span');
+            btnText.textContent = "Processing...";
+            els.exportSpinner.classList.remove('hidden');
+            els.exportBtn.disabled = true;
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const srcDoc = await PDFDocument.load(state.pdfBytes);
+                const newDoc = await PDFDocument.create();
+                
+                const total = state.pdfDoc.numPages;
+                const keep = [];
+
+                // PDF-Lib is 0-indexed, our UI is 1-indexed
+                for(let i=0; i < total; i++) {
+                    if(!state.removedPages.has(i+1)) {
+                        keep.push(i);
+                    }
+                }
+
+                if (keep.length > 0) {
+                    const copiedPages = await newDoc.copyPages(srcDoc, keep);
+                    copiedPages.forEach(page => newDoc.addPage(page));
+                }
+
+                const pdfBytes = await newDoc.save();
+                
+                // Trigger Download
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = state.fileName.replace('.pdf', '_edited.pdf');
+                link.click();
+
+            } catch(e) {
+                console.error(e);
+                alert("Error exporting PDF.");
+            } finally {
+                btnText.textContent = "Export PDF";
+                els.exportSpinner.classList.add('hidden');
+                els.exportBtn.disabled = false;
+            }
+        }
+
+        function resetApp() {
+            state.pdfDoc = null;
+            state.pdfBytes = null;
+            state.removedPages.clear();
+            state.fileName = 'Untitled';
+            
+            els.fileInput.value = '';
+            els.pageGrid.innerHTML = '';
+            els.headerFilename.textContent = "Untitled Project";
+            
+            els.pageGrid.classList.add('hidden');
+            els.dropZone.classList.remove('hidden');
+            els.floatingBar.classList.add('hidden-fade');
+            els.zoomControls.classList.add('opacity-0');
+        }
+    </script>
+</body>
+</html>
