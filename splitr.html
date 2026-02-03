@@ -22,6 +22,7 @@
                         accent: '#3b82f6',
                         accentHover: '#2563eb',
                         gold: '#fbbf24',
+                        vip: '#d946ef', /* Fuchsia for VIP */
                         text: '#e5e5e5',
                         muted: '#a3a3a3'
                     },
@@ -132,6 +133,14 @@
         .turbo-toggle:checked + .turbo-label {
             background-color: #fbbf24;
         }
+
+        /* VIP Toggle Style */
+        .turbo-toggle.vip-active:checked {
+            border-color: #d946ef; /* Fuchsia */
+        }
+        .turbo-toggle.vip-active:checked + .turbo-label {
+            background-color: #d946ef;
+        }
     </style>
 </head>
 <body class="h-full w-full flex flex-col font-sans text-gray-100 selection:bg-accent selection:text-white">
@@ -159,8 +168,8 @@
         <div class="flex items-center gap-2 md:gap-3 shrink-0">
             <!-- Turbo Toggle (Desktop Only) -->
             <div class="hidden md:flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/5 cursor-pointer hover:bg-white/5 transition" onclick="toggleTurbo()">
-                <span class="text-[10px] font-bold text-gold uppercase tracking-wider flex items-center gap-1">
-                    <i class="ph-fill ph-lightning"></i> Turbo
+                <span id="turbo-text-desktop" class="text-[10px] font-bold text-gold uppercase tracking-wider flex items-center gap-1">
+                    <i id="turbo-icon-desktop" class="ph-fill ph-lightning"></i> Turbo
                 </span>
                 <div class="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in pointer-events-none">
                     <input type="checkbox" id="turbo-mode-check" class="turbo-toggle absolute block w-3 h-3 rounded-full bg-white border-4 appearance-none cursor-pointer top-0.5 left-0.5 transition-all duration-300"/>
@@ -246,11 +255,11 @@
             <div class="p-5 border-b border-border/50">
                 <div onclick="toggleTurbo()" class="bg-black/20 p-3 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:bg-white/5 transition">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
-                            <i class="ph-fill ph-lightning text-gold text-lg"></i>
+                        <div id="turbo-icon-bg-mobile" class="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center transition-colors">
+                            <i id="turbo-icon-mobile" class="ph-fill ph-lightning text-gold text-lg"></i>
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-xs font-bold text-gray-200">Turbo Mode</span>
+                            <span id="turbo-text-mobile" class="text-xs font-bold text-gray-200">Turbo Mode</span>
                             <span class="text-[10px] text-gray-500">2x Processing Speed</span>
                         </div>
                     </div>
@@ -484,7 +493,8 @@
         let pagesToRemove = new Set();
         let zoom = 100;
         let isTurbo = false; 
-        let isPremium = localStorage.getItem('splitr_premium') === 'true'; // Persistence Check
+        let isPremium = localStorage.getItem('splitr_premium') === 'true'; 
+        let isVIP = localStorage.getItem('splitr_vip') === 'true'; // Check VIP persistence
 
         // Elements
         const fileInput = document.getElementById('fileInput');
@@ -523,12 +533,11 @@
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
             }
 
-            // Check Premium Status on Load
             updatePremiumUI();
         });
 
         function updatePremiumUI() {
-            if (isPremium) {
+            if (isPremium || isVIP) {
                 if (promoBanner) promoBanner.classList.add('hidden'); 
                 if (lockIcon) lockIcon.classList.add('hidden');
                 if (lockIconMobile) lockIconMobile.classList.add('hidden');
@@ -537,18 +546,49 @@
                 if (lockIcon) lockIcon.classList.remove('hidden');
                 if (lockIconMobile) lockIconMobile.classList.remove('hidden');
             }
+
+            if (isVIP) {
+                // Update UI for VIP Mode (Purple/Fuchsia)
+                const turboText = document.getElementById('turbo-text-desktop');
+                const turboIcon = document.getElementById('turbo-icon-desktop');
+                const turboTextMob = document.getElementById('turbo-text-mobile');
+                const turboIconMob = document.getElementById('turbo-icon-mobile');
+                const turboIconBgMob = document.getElementById('turbo-icon-bg-mobile');
+
+                // Apply VIP Styles
+                [turboCheck, turboCheckMobile].forEach(el => {
+                    if(el) el.classList.add('vip-active');
+                });
+
+                if(turboText) {
+                    turboText.innerHTML = `<i class="ph-fill ph-rocket-launch"></i> SUPER TURBO`;
+                    turboText.classList.replace('text-gold', 'text-vip');
+                }
+                if(turboTextMob) {
+                    turboTextMob.textContent = "Super Turbo";
+                    turboTextMob.classList.replace('text-gray-200', 'text-vip');
+                }
+                if(turboIconMob) {
+                    turboIconMob.classList.replace('ph-lightning', 'ph-rocket-launch');
+                    turboIconMob.classList.replace('text-gold', 'text-vip');
+                }
+                if(turboIconBgMob) {
+                    turboIconBgMob.classList.replace('bg-gold/10', 'bg-vip/10');
+                }
+            }
         }
 
         // --- TURBO MODE LOGIC ---
         function toggleTurbo() {
-            if (isPremium) {
+            if (isPremium || isVIP) {
                 isTurbo = !isTurbo;
-                // Sync all turbo inputs
                 if(turboCheck) turboCheck.checked = isTurbo;
                 if(turboCheckMobile) turboCheckMobile.checked = isTurbo;
                 
-                const msg = isTurbo ? "Turbo Activated ⚡" : "Standard Mode";
-                showToast(msg, isTurbo ? "High performance enabled" : "Balanced speed", isTurbo ? "success" : "warning");
+                let title = isTurbo ? (isVIP ? "Super Turbo Activated 🚀" : "Turbo Activated ⚡") : "Standard Mode";
+                let msg = isTurbo ? (isVIP ? "3x Speed • Batch Processing" : "2x Speed Enabled") : "Balanced Speed";
+                
+                showToast(title, msg, isTurbo ? "success" : "warning");
             } else {
                 upgradeModal.classList.remove('hidden');
                 if(turboCheck) turboCheck.checked = false; 
@@ -568,16 +608,15 @@
             if (code === 'SPLITR_PRO') {
                 isPremium = true;
                 localStorage.setItem('splitr_premium', 'true');
-                
-                showToast("Upgrade Successful", "Turbo Mode Unlocked Forever!", "success");
-                
-                upgradeModal.classList.add('hidden');
-                
-                isTurbo = true;
-                if(turboCheck) turboCheck.checked = true;
-                if(turboCheckMobile) turboCheckMobile.checked = true;
-                
-                updatePremiumUI();
+                showToast("Turbo Unlocked", "2x Speed Enabled!", "success");
+                completeUpgrade();
+            } else if (code === 'SPLITR_VIP_XYZ2026') {
+                isPremium = true;
+                isVIP = true;
+                localStorage.setItem('splitr_premium', 'true');
+                localStorage.setItem('splitr_vip', 'true');
+                showToast("VIP UNLOCKED 🚀", "Super Turbo Mode Enabled!", "success");
+                completeUpgrade();
             } else {
                 showToast("Invalid Code", "Please check your coupon", "error");
                 input.classList.add('border-red-500');
@@ -585,12 +624,19 @@
             }
         }
 
+        function completeUpgrade() {
+            upgradeModal.classList.add('hidden');
+            isTurbo = true;
+            if(turboCheck) turboCheck.checked = true;
+            if(turboCheckMobile) turboCheckMobile.checked = true;
+            updatePremiumUI();
+        }
+
         function closeUpgradeModal() {
             upgradeModal.classList.add('hidden');
             if(turboCheck) turboCheck.checked = false;
             if(turboCheckMobile) turboCheckMobile.checked = false;
             
-            // Reset to step 1
             setTimeout(() => {
                 const step1 = document.getElementById('upgrade-step-1');
                 const step2 = document.getElementById('upgrade-step-2');
@@ -656,15 +702,30 @@
             const pagesGrid = document.getElementById('pages-grid');
             const isMobile = window.innerWidth < 768;
             
-            const scale = isMobile ? 0.3 : (isTurbo ? 0.4 : 0.6); 
-            const batchSize = isTurbo ? 5 : 1; 
+            // SPEED LOGIC: Standard vs Turbo vs Super Turbo (VIP)
+            // VIP: 15 pages/batch, 0.25 scale (very fast thumbnails)
+            // Turbo: 5 pages/batch, 0.4 scale
+            // Std: 1 page/batch, 0.6 scale (Mobile 0.3)
+            let batchSize = 1;
+            let scale = isMobile ? 0.3 : 0.6;
+
+            if (isTurbo) {
+                if (isVIP) {
+                    batchSize = 15;
+                    scale = 0.25; 
+                } else {
+                    batchSize = 5;
+                    scale = 0.4;
+                }
+            }
 
             showLoader(true, "Rendering<span class='dots'></span>", `Preparing pages...`, 0, "ph-image");
 
             for (let i = 1; i <= totalPages; i += batchSize) {
                 const progress = Math.round((i / totalPages) * 100);
                 
-                if(loaderSub) loaderSub.textContent = `Processing Page ${i} of ${totalPages} ${isTurbo ? '⚡' : ''}`;
+                let modeText = isTurbo ? (isVIP ? '🚀' : '⚡') : '';
+                if(loaderSub) loaderSub.textContent = `Processing Page ${i} of ${totalPages} ${modeText}`;
                 if(loaderProgress) loaderProgress.style.width = `${progress}%`;
                 if(loaderPct) loaderPct.textContent = `${progress}%`;
                 
@@ -679,7 +740,8 @@
 
                 await Promise.all(batchPromises);
 
-                if (!isTurbo || i % (batchSize * 2) === 0) {
+                // VIP skips breathing room almost entirely
+                if (!isVIP && (!isTurbo || i % (batchSize * 2) === 0)) {
                     await new Promise(r => setTimeout(r, 0));
                 }
             }
@@ -840,14 +902,27 @@
 
                 showLoader(true, "Compressing<span class='dots'></span>", "Optimizing pages...", 0, "ph-arrows-in-line-horizontal");
 
-                const batchSize = isTurbo ? 3 : 1;
-                const quality = isTurbo ? 0.5 : 0.6; 
-                const scale = 1.0; 
+                // SPEED LOGIC: VIP vs Turbo vs Standard
+                let batchSize = 1;
+                let quality = 0.6;
+                let scale = 1.0;
+
+                if (isTurbo) {
+                    if (isVIP) {
+                        batchSize = 5; // Compressor is heavier, reduce batch for stability
+                        quality = 0.4; // Aggressive compression
+                        scale = 0.8; // Downscale slightly
+                    } else {
+                        batchSize = 3;
+                        quality = 0.5;
+                    }
+                }
 
                 for (let i = 0; i < keepIndices.length; i += batchSize) {
                     const progress = Math.round((i / keepIndices.length) * 100);
                     
-                    if(loaderSub) loaderSub.textContent = `Optimizing Page ${i + 1} of ${keepIndices.length} ${isTurbo ? '⚡' : ''}`;
+                    let modeText = isTurbo ? (isVIP ? '🚀' : '⚡') : '';
+                    if(loaderSub) loaderSub.textContent = `Optimizing Page ${i + 1} of ${keepIndices.length} ${modeText}`;
                     if(loaderProgress) loaderProgress.style.width = `${progress}%`;
                     if(loaderPct) loaderPct.textContent = `${progress}%`;
 
@@ -1000,8 +1075,7 @@
                 if(fileInput) fileInput.value = '';
                 document.getElementById('mobile-selection-dot').classList.add('hidden');
                 
-                // Show promo again if reset and not premium
-                if(!isPremium && promoBanner) promoBanner.classList.remove('hidden');
+                if(!isPremium && !isVIP && promoBanner) promoBanner.classList.remove('hidden');
                 
                 closeModal();
             }
