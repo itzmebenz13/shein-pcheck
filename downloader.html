@@ -382,16 +382,7 @@
 
         // --- Simulation ---
 
-        const mockTitles = [
-            "Lofi Hip Hop Radio - Beats to Relax/Study To",
-            "Cyberpunk 2077 - Official Soundtrack [OST]",
-            "Hans Zimmer - Interstellar Main Theme",
-            "Rick Astley - Never Gonna Give You Up",
-            "Rain Sounds for Sleeping (10 Hours)",
-            "Top 50 Gaming Songs Mix 2026"
-        ];
-
-        function startProcess() {
+        async function startProcess() {
             const url = el.urlInput.value.trim();
             
             if (!url) {
@@ -409,9 +400,22 @@
             el.inputState.classList.add('hidden');
             el.processState.classList.remove('hidden');
 
-            // Select random title or generate one
-            const randomTitle = mockTitles[Math.floor(Math.random() * mockTitles.length)];
-            el.songTitle.innerText = randomTitle;
+            // Default state
+            let videoTitle = "YouTube Video";
+            let videoThumb = "";
+            
+            // Start fetching real metadata in background
+            // We use noembed as a CORS-friendly oEmbed proxy
+            const metadataPromise = fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.title) videoTitle = data.title;
+                    if (data.thumbnail_url) videoThumb = data.thumbnail_url;
+                })
+                .catch(err => {
+                    console.warn("Could not fetch metadata:", err);
+                    videoTitle = "YouTube Video (" + new Date().toLocaleTimeString() + ")";
+                });
 
             // Simulation Steps
             const steps = [
@@ -424,8 +428,8 @@
             let progress = 0;
             let stepIndex = 0;
 
-            const interval = setInterval(() => {
-                const increment = Math.random() > 0.5 ? 3 : 6;
+            const interval = setInterval(async () => {
+                const increment = Math.random() > 0.5 ? 2 : 5;
                 progress += increment;
                 
                 if (progress > 100) progress = 100;
@@ -443,19 +447,28 @@
 
                 if (progress === 100) {
                     clearInterval(interval);
-                    completeProcess(randomTitle);
+                    // Wait for metadata (usually fast, but ensures we don't flash default text)
+                    await metadataPromise; 
+                    completeProcess(videoTitle, videoThumb);
                 }
-            }, 80); // Speed of simulation
+            }, 80); 
         }
 
-        function completeProcess(title) {
+        function completeProcess(title, thumbnail) {
             // Calculate mock file size based on bitrate (purely aesthetic math)
             const duration = 180 + Math.random() * 120; // 3-5 mins
             const bitrate = state.bitrates[state.bitrateIndex];
             const sizeMB = ((duration * bitrate) / 8 / 1024).toFixed(1);
 
             // Update Success UI
+            el.songTitle.innerText = title;
             el.resultMeta.innerText = `• ${sizeMB} MB • ${bitrate}kbps`;
+
+            // Update Thumbnail if available
+            if (thumbnail) {
+                const img = el.successState.querySelector('img');
+                if (img) img.src = thumbnail;
+            }
             
             // Add to History
             const historyItem = {
